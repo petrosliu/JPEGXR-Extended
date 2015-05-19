@@ -560,6 +560,15 @@ ERR PKImageEncode_SetDescriptiveMetadata(PKImageEncode *pIE,
 	return WMP_errNotYetImplemented;
 }
 
+ERR PKImageEncode_Transform(PKImageEncode* pIE, U32 cLine, U8* pbPixels,
+		U32 cbStride) {
+	UNREFERENCED_PARAMETER( pIE);
+	UNREFERENCED_PARAMETER( cLine);
+	UNREFERENCED_PARAMETER( pbPixels);
+	UNREFERENCED_PARAMETER( cbStride);
+	return WMP_errAbstractMethod;
+}
+
 ERR PKImageEncode_WritePixels(PKImageEncode* pIE, U32 cLine, U8* pbPixels,
 		U32 cbStride) {
 	UNREFERENCED_PARAMETER( pIE);
@@ -762,6 +771,7 @@ ERR PKImageEncode_Create(PKImageEncode** ppIE) {
 	pIE->SetResolution = PKImageEncode_SetResolution;
 	pIE->SetColorContext = PKImageEncode_SetColorContext;
 	pIE->SetDescriptiveMetadata = PKImageEncode_SetDescriptiveMetadata;
+	pIE->Transform = PKImageEncode_Transform;
 	pIE->WritePixels = PKImageEncode_WritePixels;
 //    pIE->WriteSource = PKImageEncode_WriteSource;
 

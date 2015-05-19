@@ -301,33 +301,28 @@ Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 /*************************************************************************
  Top level function for processing a macroblock worth of input
  *************************************************************************/
-Int processMacroblock(CWMImageStrCodec *pSC) {
-	Bool topORleft = (pSC->cColumn == 0 || pSC->cRow == 0);
-	ERR_CODE result = ICERR_OK;
-	size_t j, jend = (pSC->m_pNextSC != NULL);
-
-	for (j = 0; j <= jend; j++) {
-		transformMacroblock(pSC);
-		if (!topORleft) {
-			getTilePos(pSC, (Int) pSC->cColumn - 1, (Int) pSC->cRow - 1);
-			if (jend) {
-				pSC->m_pNextSC->cTileRow = pSC->cTileRow;
-				pSC->m_pNextSC->cTileColumn = pSC->cTileColumn;
-			}
-			if ((result = encodeMB(pSC, (Int) pSC->cColumn - 1,
-					(Int) pSC->cRow - 1)) != ICERR_OK)
-				return result;
-		}
-
-		if (jend) {
-			pSC->m_pNextSC->cRow = pSC->cRow;
-			pSC->m_pNextSC->cColumn = pSC->cColumn;
-			pSC = pSC->m_pNextSC;
-		}
-	}
-
-	return ICERR_OK;
+//  added by zx 
+Int transformMB(CWMImageStrCodec *pSC) {
+        transformMacroblock(pSC);
+        return ICERR_OK;
 }
+// end of zx addition
+
+Int processMacroblock(CWMImageStrCodec *pSC) {
+        Bool topORleft = (pSC->cColumn == 0 || pSC->cRow == 0);
+        ERR_CODE result = ICERR_OK;
+
+//        printf("%d %d\n", pSC->cRow, pSC->cColumn);
+//        transformMacroblock(pSC);
+        if (!topORleft) {
+           getTilePos(pSC, (Int) pSC->cColumn - 1, (Int) pSC->cRow - 1);
+           if ((result = encodeMB(pSC, (Int) pSC->cColumn - 1, (Int) pSC->cRow - 1)) != ICERR_OK)
+              return result;
+           }
+        return ICERR_OK;
+}
+
+
 
 /*************************************************************************
  forwardRGBE: forward conversion from RGBE to RGB
@@ -502,7 +497,8 @@ Int StrIOEncInit(CWMImageStrCodec* pSC) {
 				if (pSC->ppTempFile[i] == NULL)
 					return ICERR_ERROR;
 
-				if ((pFilename = tmpnam(NULL)) == NULL)
+//				if ((pFilename = tmpnam(NULL)) == NULL)
+				if ((pFilename = mkstemp(NULL)) == NULL)
 					return ICERR_ERROR;
 				strcpy(pSC->ppTempFile[i], pFilename);
 #endif
@@ -1412,8 +1408,262 @@ Int ValidateArgs(CWMImageInfo* pII, CWMIStrCodecParam *pSCP) {
 	return ICERR_OK;
 }
 
+
+//  beginning of zx addition for separate transform 
+
 /*************************************************************************
- Initialization of CWMImageStrCodec struct
+ *************************************************************************
+ Initialization of CWMImageStrCodec struct for tranform
+ *************************************************************************
+ *************************************************************************/
+static Void InitializeStrEncTrans(CWMImageStrCodec *pSC, const CWMImageInfo* pII,
+                const CWMIStrCodecParam *pSCP) {
+        pSC->cbStruct = sizeof(*pSC);
+        pSC->WMII = *pII;
+        pSC->WMISCP = *pSCP;
+
+        // set nExpBias
+        if (pSC->WMISCP.nExpBias == 0)
+                pSC->WMISCP.nExpBias = 4 + 128; //default
+        pSC->WMISCP.nExpBias += 128; // rollover arithmetic
+
+        pSC->cRow = 0;
+        pSC->cColumn = 0;
+
+        pSC->cmbWidth = (pSC->WMII.cWidth + 15) / 16;
+        pSC->cmbHeight = (pSC->WMII.cHeight + 15) / 16;
+
+        pSC->Load = inputMBRow;
+//        pSC->Quantize = quantizeMacroblock;
+
+        pSC->ProcessTopLeft = transformMB;
+        pSC->ProcessTop = transformMB;
+        pSC->ProcessTopRight = transformMB;
+        pSC->ProcessLeft = transformMB;
+        pSC->ProcessCenter = transformMB;
+        pSC->ProcessRight = transformMB;
+        pSC->ProcessBottomLeft = transformMB;
+        pSC->ProcessBottom = transformMB;
+        pSC->ProcessBottomRight = transformMB;
+
+        pSC->m_pNextSC = NULL;
+        pSC->m_bSecondary = FALSE;
+}
+
+
+/*************************************************************************
+ Streaming API init for transform
+ *************************************************************************/
+Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
+		CTXSTRCODEC* pctxSC) {
+	static size_t cbChannels[BD_MAX] = { 2, 4 };
+
+	size_t cbChannel = 0, cblkChroma = 0, i;
+	size_t cbMacBlockStride = 0, cbMacBlockChroma = 0, cMacBlock = 0;
+
+	CWMImageStrCodec* pSC = NULL, *pNextSC = NULL;
+	char* pb = NULL;
+	size_t cb = 0;
+	Bool b32bit = sizeof(size_t) == 4;
+
+	Int err;
+
+	if (ValidateArgs(pII, pSCP) != ICERR_OK) {
+		goto ErrorExit;
+	}
+
+	//================================================
+	*pctxSC = NULL;
+
+	//================================================
+	cbChannel = cbChannels[pSCP->bdBitDepth];
+	cblkChroma = cblkChromas[pSCP->cfColorFormat];
+	cbMacBlockStride = cbChannel * 16 * 16;
+	cbMacBlockChroma = cbChannel * 16 * cblkChroma;
+	cMacBlock = (pII->cWidth + 15) / 16;
+
+	//================================================
+	cb = sizeof(*pSC) + (128 - 1) + (PACKETLENGTH * 4 - 1) + (PACKETLENGTH * 2)
+			+ sizeof(*pSC->pIOHeader);
+	i = cbMacBlockStride + cbMacBlockChroma * (pSCP->cChannel - 1);
+	if (b32bit) // integer overlow/underflow check for 32-bit system
+		if (((cMacBlock >> 15) * i) & 0xffff0000)
+			return ICERR_ERROR;
+	i *= cMacBlock * 2;
+	cb += i;
+
+	pb = malloc(cb);
+	if (NULL == pb) {
+		goto ErrorExit;
+	}
+	memset(pb, 0, cb);
+
+	//================================================
+	pSC = (CWMImageStrCodec*) pb;
+	pb += sizeof(*pSC);
+
+	// Set up perf timers
+	PERFTIMER_ONLY(pSC->m_fMeasurePerf = pSCP->fMeasurePerf);
+	PERFTIMER_NEW(pSC->m_fMeasurePerf, &pSC->m_ptEndToEndPerf);
+	PERFTIMER_NEW(pSC->m_fMeasurePerf, &pSC->m_ptEncDecPerf);
+	PERFTIMER_START(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
+	PERFTIMER_START(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+	PERFTIMER_COPYSTARTTIME(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf,
+			pSC->m_ptEndToEndPerf);
+
+	pSC->m_param.cfColorFormat = pSCP->cfColorFormat;
+	pSC->m_param.bAlphaChannel = (pSCP->uAlphaMode == 3);
+	pSC->m_param.cNumChannels = pSCP->cChannel;
+	pSC->m_param.cExtraPixelsTop = pSC->m_param.cExtraPixelsBottom =
+			pSC->m_param.cExtraPixelsLeft = pSC->m_param.cExtraPixelsRight = 0;
+
+	pSC->cbChannel = cbChannel;
+
+	pSC->m_param.bTranscode = pSC->bTileExtraction = FALSE;
+
+	//================================================
+	InitializeStrEncTrans(pSC, pII, pSCP);
+
+	//================================================
+	// 2 Macro Row buffers for each channel
+	pb = ALIGNUP(pb, 128);
+	for (i = 0; i < pSC->m_param.cNumChannels; i++) {
+		pSC->a0MBbuffer[i] = (PixelI*) pb;
+		pb += cbMacBlockStride * pSC->cmbWidth;
+		pSC->a1MBbuffer[i] = (PixelI*) pb;
+		pb += cbMacBlockStride * pSC->cmbWidth;
+		cbMacBlockStride = cbMacBlockChroma;
+	}
+
+	//================================================
+	// lay 2 aligned IO buffers just below pIO struct
+	pb = (char*) ALIGNUP(pb, PACKETLENGTH * 4) + PACKETLENGTH * 2;
+	pSC->pIOHeader = (BitIOInfo*) pb;
+
+	//================================================
+	err = StrEncInit(pSC);
+	if (ICERR_OK != err)
+		goto ErrorExit;
+
+	pSC->m_pNextSC = pNextSC;
+	//================================================
+	*pctxSC = (CTXSTRCODEC) pSC;
+
+	writeIndexTableNull(pSC);
+#if defined(WMP_OPT_SSE2) || defined(WMP_OPT_CC_ENC) || defined(WMP_OPT_TRFM_ENC)
+	StrEncOpt(pSC);
+#endif // OPT defined
+	PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+	return ICERR_OK;
+
+	ErrorExit: return ICERR_ERROR;
+}
+
+/*************************************************************************
+ Streaming API execute transform
+ *************************************************************************/
+Int ImageStrEncTrans(CTXSTRCODEC ctxSC, const CWMImageBufferInfo* pBI) {
+        CWMImageStrCodec* pSC = (CWMImageStrCodec*) ctxSC;
+        CWMImageStrCodec* pNextSC = pSC->m_pNextSC;
+        ImageDataProc ProcessLeft, ProcessCenter, ProcessRight;
+
+        if (sizeof(*pSC) != pSC->cbStruct) {
+                return ICERR_ERROR;
+        }
+
+        //================================
+        PERFTIMER_START(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+
+        pSC->WMIBI = *pBI;
+        pSC->cColumn = 0;
+        initMRPtr(pSC);
+        if (pNextSC)
+                pNextSC->WMIBI = *pBI;
+
+        if (0 == pSC->cRow) {
+                ProcessLeft = pSC->ProcessTopLeft;
+                ProcessCenter = pSC->ProcessTop;
+                ProcessRight = pSC->ProcessTopRight;
+        } else {
+                ProcessLeft = pSC->ProcessLeft;
+                ProcessCenter = pSC->ProcessCenter;
+                ProcessRight = pSC->ProcessRight;
+        }
+
+        pSC->Load(pSC);
+        if (ProcessLeft(pSC) != ICERR_OK)
+                return ICERR_ERROR;
+        advanceMRPtr(pSC);
+
+        //================================
+        for (pSC->cColumn = 1; pSC->cColumn < pSC->cmbWidth; ++pSC->cColumn) {
+                if (ProcessCenter(pSC) != ICERR_OK)
+                        return ICERR_ERROR;
+                advanceMRPtr(pSC);
+        }
+
+        //================================
+        if (ProcessRight(pSC) != ICERR_OK)
+                return ICERR_ERROR;
+        if (pSC->cRow)
+                advanceOneMBRow(pSC);
+
+        ++pSC->cRow;
+        swapMRPtr(pSC);
+
+        PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+        return ICERR_OK;
+}
+
+/*************************************************************************
+ Streaming API Transform term
+ *************************************************************************/
+Int ImageStrEncTransTerm(CTXSTRCODEC ctxSC) {
+        CWMImageStrCodec* pSC = (CWMImageStrCodec*) ctxSC;
+        // CWMImageStrCodec *pNextSC = pSC->m_pNextSC;
+
+        if (sizeof(*pSC) != pSC->cbStruct) {
+                return ICERR_ERROR;
+        }
+
+        //================================
+        PERFTIMER_START(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+        pSC->cColumn = 0;
+        initMRPtr(pSC);
+
+        pSC->ProcessBottomLeft(pSC);
+        advanceMRPtr(pSC);
+
+        //================================
+        for (pSC->cColumn = 1; pSC->cColumn < pSC->cmbWidth; ++pSC->cColumn) {
+                pSC->ProcessBottom(pSC);
+                advanceMRPtr(pSC);
+        }
+
+        //================================
+        pSC->ProcessBottomRight(pSC);
+
+        //================================
+        StrEncTerm(pSC);
+
+        PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+        PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
+        PERFTIMER_REPORT(pSC->m_fMeasurePerf, pSC);
+        PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+        PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
+
+        free(pSC);
+        return ICERR_OK;
+}
+
+//  end of zx addition for separate transform 
+
+
+
+
+
+/*************************************************************************
+ Initialization of CWMImageStrCodec struct for encoding
  *************************************************************************/
 static Void InitializeStrEnc(CWMImageStrCodec *pSC, const CWMImageInfo* pII,
 		const CWMIStrCodecParam *pSCP) {
@@ -1434,6 +1684,7 @@ static Void InitializeStrEnc(CWMImageStrCodec *pSC, const CWMImageInfo* pII,
 
 	pSC->Load = inputMBRow;
 	pSC->Quantize = quantizeMacroblock;
+
 	pSC->ProcessTopLeft = processMacroblock;
 	pSC->ProcessTop = processMacroblock;
 	pSC->ProcessTopRight = processMacroblock;
@@ -1449,7 +1700,7 @@ static Void InitializeStrEnc(CWMImageStrCodec *pSC, const CWMImageInfo* pII,
 }
 
 /*************************************************************************
- Streaming API init
+ Streaming API init for coding 
  *************************************************************************/
 Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 		CTXSTRCODEC* pctxSC) {
@@ -1541,53 +1792,6 @@ Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	err = StrEncInit(pSC);
 	if (ICERR_OK != err)
 		goto ErrorExit;
-
-	// if interleaved alpha is needed
-	if (pSC->m_param.bAlphaChannel) {
-		cbMacBlockStride = cbChannel * 16 * 16;
-		// 1. allocate new pNextSC info
-		//================================================
-		cb = sizeof(*pNextSC) + (128 - 1) + cbMacBlockStride * cMacBlock * 2;
-		pb = malloc(cb);
-		if (NULL == pb) {
-			goto ErrorExit;
-		}
-		memset(pb, 0, cb);
-		//================================================
-		pNextSC = (CWMImageStrCodec*) pb;
-		pb += sizeof(*pNextSC);
-
-		// 2. initialize pNextSC
-		pNextSC->m_param.cfColorFormat = Y_ONLY;
-		pNextSC->m_param.cNumChannels = 1;
-		pNextSC->m_param.bAlphaChannel = TRUE;
-		pNextSC->cbChannel = cbChannel;
-		//================================================
-
-		// 3. initialize arrays
-		InitializeStrEnc(pNextSC, pII, pSCP);
-		//================================================
-
-		// 2 Macro Row buffers for each channel
-		pb = ALIGNUP(pb, 128);
-		pNextSC->a0MBbuffer[0] = (PixelI*) pb;
-		pb += cbMacBlockStride * pNextSC->cmbWidth;
-		pNextSC->a1MBbuffer[0] = (PixelI*) pb;
-		pb += cbMacBlockStride * pNextSC->cmbWidth;
-		//================================================
-		pNextSC->pIOHeader = pSC->pIOHeader;
-		//================================================
-
-		// 4. link pSC->pNextSC = pNextSC
-		pNextSC->m_pNextSC = pSC;
-		pNextSC->m_bSecondary = TRUE;
-
-		// 5. StrEncInit
-		StrEncInit(pNextSC);
-
-		// 6. Write header of image plane
-		WriteImagePlaneHeader(pNextSC);
-	}
 
 	pSC->m_pNextSC = pNextSC;
 	//================================================

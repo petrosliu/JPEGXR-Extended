@@ -752,13 +752,6 @@ ERR PKImageEncode_EncodeContent_Init(PKImageEncode* pIE, PKPixelInfo PI,
 		// which could prevent optimization from being engaged
 	}
 
-	//if (pIE->WMP.bHasAlpha)
-	//{
-	//    pIE->WMP.wmiSCP.cChannel = PI.cChannel - 1;
-	//    pIE->WMP.wmiI.cfColorFormat = PI.cfStripAlpha;
-	//}
-	//else
-
 	if (PI.cfColorFormat == NCOMPONENT && (!(PI.grBit & PK_pixfmtHasAlpha))) //N-channel without Alpha
 		pIE->WMP.wmiSCP.cChannel = PI.cChannel;
 	else
@@ -767,6 +760,7 @@ ERR PKImageEncode_EncodeContent_Init(PKImageEncode* pIE, PKPixelInfo PI,
 	pIE->idxCurrentLine = 0;
 
 	pIE->WMP.wmiSCP.fMeasurePerf = TRUE;
+
 	FailIf(
 			ICERR_OK != ImageStrEncInit(&pIE->WMP.wmiI, &pIE->WMP.wmiSCP, &pIE->WMP.ctxSC),
 			WMP_errFail);
@@ -821,6 +815,120 @@ ERR PKImageEncode_EncodeContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 
 	Cleanup: return err;
 }
+
+//zx added to separate tranform from coding 
+
+ERR PKImageEncode_TransformContent_Init(PKImageEncode* pIE, PKPixelInfo PI,
+                U32 cLine, U8* pbPixels, U32 cbStride) {
+        ERR err = WMP_errSuccess;
+
+        // init codec
+        pIE->WMP.wmiI.cWidth = pIE->uWidth;
+        pIE->WMP.wmiI.cHeight = pIE->uHeight;
+        pIE->WMP.wmiI.bdBitDepth = PI.bdBitDepth;
+        pIE->WMP.wmiI.cBitsPerUnit = PI.cbitUnit;
+        pIE->WMP.wmiI.bRGB = !(PI.grBit & PK_pixfmtBGR);
+        pIE->WMP.wmiI.cfColorFormat = PI.cfColorFormat;
+        pIE->WMP.wmiI.oOrientation = pIE->WMP.oOrientation;
+
+        // Set the fPaddedUserBuffer if the following conditions are met
+        if (0 == ((size_t) pbPixels % 128) && // Frame buffer is aligned to 128-byte boundary
+                        0 == (pIE->uWidth % 16) && // Horizontal resolution is multiple of 16
+                        0 == (cLine % 16) && // Vertical resolution is multiple of 16
+                        0 == (cbStride % 128)) // Stride is a multiple of 128 bytes
+                                        {
+                pIE->WMP.wmiI.fPaddedUserBuffer = TRUE;
+        }
+
+        if (PI.cfColorFormat == NCOMPONENT && (!(PI.grBit & PK_pixfmtHasAlpha))) //N-channel without Alpha
+                pIE->WMP.wmiSCP.cChannel = PI.cChannel;
+        else
+                pIE->WMP.wmiSCP.cChannel = PI.cChannel - 1; //other formats and (N-channel + Alpha)
+
+        pIE->idxCurrentLine = 0;
+
+        pIE->WMP.wmiSCP.fMeasurePerf = TRUE;
+
+        FailIf(
+                        ICERR_OK != ImageStrEncTransInit(&pIE->WMP.wmiI, &pIE->WMP.wmiSCP, &pIE->WMP.ctxSC),
+                        WMP_errFail);
+
+        Cleanup: return err;
+}
+
+ERR PKImageEncode_TransformContent_exe(PKImageEncode* pIE, U32 cLine,
+                U8* pbPixels, U32 cbStride) {
+        ERR err = WMP_errSuccess;
+        U32 i = 0;
+
+        //================================
+        for (i = 0; i < cLine; i += 16) {
+                Bool f420 = (pIE->WMP.wmiI.cfColorFormat == YUV_420
+                                || (pIE->WMP.wmiSCP.bYUVData
+                                                && pIE->WMP.wmiSCP.cfColorFormat == YUV_420));
+                CWMImageBufferInfo wmiBI = { 0 };
+                wmiBI.pv = pbPixels + cbStride * i / (f420 ? 2 : 1);
+                wmiBI.cLine = min(16, cLine - i);
+                wmiBI.cbStride = cbStride;
+                FailIf(ICERR_OK != ImageStrEncTrans(pIE->WMP.ctxSC, &wmiBI),
+                                WMP_errFail);
+        }
+        pIE->idxCurrentLine += cLine;
+
+        Cleanup: return err;
+}
+
+ERR PKImageEncode_TransformContent_Term(PKImageEncode* pIE) {
+        ERR err = WMP_errSuccess;
+
+        FailIf(ICERR_OK != ImageStrEncTransTerm(pIE->WMP.ctxSC), WMP_errFail);
+
+        Cleanup: return err;
+}
+
+ERR PKImageEncode_TransformContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
+		U8* pbPixels, U32 cbStride) {
+	ERR err = WMP_errSuccess;
+	size_t offPos = 0;
+
+	Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
+	pIE->WMP.nOffImage = (Long) offPos;
+
+	Call(PKImageEncode_TransformContent_Init(pIE, PI, cLine, pbPixels, cbStride));
+	Call(PKImageEncode_TransformContent_exe(pIE, cLine, pbPixels, cbStride));
+	Call(PKImageEncode_TransformContent_Term(pIE));
+
+	Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
+	pIE->WMP.nCbImage = (Long) offPos - pIE->WMP.nOffImage;
+
+	Cleanup: return err;
+}
+
+ERR PKImageEncode_Transform_WMP(PKImageEncode* pIE, U32 cLine, U8* pbPixels, U32 cbStride)
+{
+printf("test_transform\n");
+        ERR err = WMP_errSuccess;
+        PKPixelInfo PI;
+
+        // Performing non-banded encode
+        assert(BANDEDENCSTATE_UNINITIALIZED == pIE->WMP.eBandedEncState);
+        pIE->WMP.eBandedEncState = BANDEDENCSTATE_NONBANDEDENCODE;
+
+        PI.pGUIDPixFmt = &pIE->guidPixFormat;
+        PixelFormatLookup(&PI, LOOKUP_FORWARD);
+
+        if (!pIE->fHeaderDone) {
+                // write metadata
+                Call(WriteContainerPre(pIE));
+                pIE->fHeaderDone = !FALSE;
+        }
+        Call(PKImageEncode_TransformContent(pIE, PI, cLine, pbPixels, cbStride));
+        Call(WriteContainerPost(pIE));
+        Cleanup: return err;
+
+}
+//  end of zx addition
+
 
 ERR PKImageEncode_EncodeAlpha_Init(PKImageEncode* pIE, PKPixelInfo PI,
 		U32 cLine, U8* pbPixels, U32 cbStride) {
@@ -1084,10 +1192,9 @@ ERR PKImageEncode_SetDescriptiveMetadata_WMP(PKImageEncode *pIE,
 	Cleanup: return err;
 }
 
-ERR PKImageEncode_WritePixels_WMP(PKImageEncode* pIE, U32 cLine, U8* pbPixels,
-		U32 cbStride) {
+ERR PKImageEncode_WritePixels_WMP(PKImageEncode* pIE, U32 cLine, U8* pbPixels, U32 cbStride) 
+{
 	ERR err = WMP_errSuccess;
-	// U32 i = 0;
 	PKPixelInfo PI;
 
 	// Performing non-banded encode
@@ -1096,26 +1203,15 @@ ERR PKImageEncode_WritePixels_WMP(PKImageEncode* pIE, U32 cLine, U8* pbPixels,
 
 	PI.pGUIDPixFmt = &pIE->guidPixFormat;
 	PixelFormatLookup(&PI, LOOKUP_FORWARD);
-	pIE->WMP.bHasAlpha = !!(PI.grBit & PK_pixfmtHasAlpha);
 
 	if (!pIE->fHeaderDone) {
 		// write metadata
 		Call(WriteContainerPre(pIE));
-
 		pIE->fHeaderDone = !FALSE;
 	}
 
-	/*    if (pIE->WMP.bHasAlpha && pIE->WMP.wmiSCP.uAlphaMode == 2){
-	 pIE->WMP.wmiSCP_Alpha = pIE->WMP.wmiSCP;
-	 }
-	 */
 	Call(PKImageEncode_EncodeContent(pIE, PI, cLine, pbPixels, cbStride));
-	if (pIE->WMP.bHasAlpha && pIE->WMP.wmiSCP.uAlphaMode == 2) { //planar alpha
-		Call(PKImageEncode_EncodeAlpha(pIE, PI, cLine, pbPixels, cbStride));
-	}
-
 	Call(WriteContainerPost(pIE));
-
 	Cleanup: return err;
 }
 
@@ -1396,10 +1492,18 @@ ERR PKImageEncode_Create_WMP(PKImageEncode** ppIE) {
 	pIE = *ppIE;
 	pIE->Initialize = PKImageEncode_Initialize_WMP;
 	pIE->Terminate = PKImageEncode_Terminate_WMP;
-	pIE->SetColorContext = PKImageEncode_SetColorContext_WMP;
-	pIE->SetDescriptiveMetadata = PKImageEncode_SetDescriptiveMetadata_WMP;
+// zx quoted out
+//	pIE->SetColorContext = PKImageEncode_SetColorContext_WMP;
+//	pIE->SetDescriptiveMetadata = PKImageEncode_SetDescriptiveMetadata_WMP;
+
+
+// zx added to separate tranform and coding for rate control
+	pIE->Transform = PKImageEncode_Transform_WMP;
+
 	pIE->WritePixels = PKImageEncode_WritePixels_WMP;
 
+//zx quoted out 
+/*
 	pIE->WritePixelsBandedBegin = PKImageEncode_WritePixelsBandedBegin_WMP;
 	pIE->WritePixelsBanded = PKImageEncode_WritePixelsBanded_WMP;
 	pIE->WritePixelsBandedEnd = PKImageEncode_WritePixelsBandedEnd_WMP;
@@ -1408,7 +1512,7 @@ ERR PKImageEncode_Create_WMP(PKImageEncode** ppIE) {
 	pIE->CreateNewFrame = PKImageEncode_CreateNewFrame_WMP;
 	pIE->Release = PKImageEncode_Release_WMP;
 	pIE->bWMP = TRUE;
-
+*/
 	Cleanup: return err;
 }
 
@@ -2089,8 +2193,9 @@ ERR PKImageDecode_Create_WMP(PKImageDecode** ppID) {
 	pID->GetSize = PKImageDecode_GetSize_WMP;
 	pID->GetRawStream = PKImageDecode_GetRawStream_WMP;
 	pID->Copy = PKImageDecode_Copy_WMP;
-	pID->GetColorContext = PKImageDecode_GetColorContext_WMP;
-	pID->GetDescriptiveMetadata = PKImageDecode_GetDescriptiveMetadata_WMP;
+//zx 
+//	pID->GetColorContext = PKImageDecode_GetColorContext_WMP;
+//	pID->GetDescriptiveMetadata = PKImageDecode_GetDescriptiveMetadata_WMP;
 	pID->Release = PKImageDecode_Release_WMP;
 
 	Cleanup: return err;

@@ -472,6 +472,7 @@ typedef struct tagPKImageEncode {
 	ERR (*SetDescriptiveMetadata)(PKImageEncode *pIE,
 			const DESCRIPTIVEMETADATA *pDescMetadata);
 
+	ERR (*Transform)(PKImageEncode*, U32, U8*, U32);
 	ERR (*WritePixels)(PKImageEncode*, U32, U8*, U32);
 	ERR (*WriteSource)(PKImageEncode*, PKFormatConverter*, PKRect*);
 
@@ -562,6 +563,8 @@ ERR PKImageEncode_SetColorContext(PKImageEncode *pIE, const U8 *pbColorContext,
 		U32 cbColorContext);
 ERR PKImageEncode_SetDescriptiveMetadata(PKImageEncode *pIE,
 		const DESCRIPTIVEMETADATA *pDescMetadata);
+ERR PKImageEncode_Transform(PKImageEncode* pIE, U32 cLine, U8* pbPixel,
+		U32 cbStride);
 ERR PKImageEncode_WritePixels(PKImageEncode* pIE, U32 cLine, U8* pbPixel,
 		U32 cbStride);
 ERR PKImageEncode_CreateNewFrame(PKImageEncode* pIE, void* pvParam,
