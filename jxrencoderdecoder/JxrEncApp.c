@@ -351,6 +351,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				break;
 			case 'h':
 				pMyArgs->hei = (unsigned int)atoi(argv[i]);
+
 				break;
 			case 'w':
 				pMyArgs->wid = (unsigned int)atoi(argv[i]);

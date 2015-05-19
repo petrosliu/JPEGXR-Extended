@@ -134,8 +134,8 @@ Void transcodeTileHeader(CWMImageStrCodec * pSC, CTileQPInfo * pTileQPInfo) {
 		CWMITile * pTile = pSC->pTile + pSC->cTileColumn;
 		U8 pID = (U8) ((pSC->cTileRow * (pSC->WMISCP.cNumOfSliceMinus1V + 1)
 				+ pSC->cTileColumn) & 0x1F);
-		CWMImageStrCodec * pSCAlpha = (
-				pSC->m_param.bAlphaChannel ? pSC->m_pNextSC : NULL);
+        CWMImageStrCodec * pSCAlpha = NULL;//YD (
+				//pSC->m_param.bAlphaChannel ? pSC->m_pNextSC : NULL);
 		const size_t iAlphaPos = pSC->m_param.cNumChannels;
 
 		writePacketHeader(pContext->m_pIODC,

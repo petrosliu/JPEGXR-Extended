@@ -48,6 +48,7 @@ FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream)
 	fp = pStream->state.file.pFile;
 
 	t = width*height;
+	
 	ma = 0;
 	mi = 0;
 	image = (float *)calloc(t, sizeof(float));
@@ -62,7 +63,7 @@ FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream)
 	quantStep = max/(pow(2,31)-1);
 		
 	imageOut = (int32_t *)malloc(t*sizeof(int32_t));
-	
+
 	for(i = 0; i<t; i++)
 	{
 		imageOut[i]	= (int32_t)(((float)image[i])/quantStep);

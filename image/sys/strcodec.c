@@ -182,38 +182,68 @@ Void getTilePos(CWMImageStrCodec* pSC, size_t mbX, size_t mbY) {
 // utility functions for 2 macro block rows
 //================================================================
 Void initMRPtr(CWMImageStrCodec* pSC) {
-	size_t j, jend = (pSC->m_pNextSC != NULL);
-
+    size_t j, jend = 0;//(pSC->m_pNextSC != NULL);
+	
 	for (j = 0; j <= jend; j++) {
 		memcpy(pSC->p0MBbuffer, pSC->a0MBbuffer, sizeof(pSC->p0MBbuffer));
 		memcpy(pSC->p1MBbuffer, pSC->a1MBbuffer, sizeof(pSC->p1MBbuffer));
-		pSC = pSC->m_pNextSC;
+		//pSC = pSC->m_pNextSC;
 	}
 }
+
 
 Void advanceMRPtr(CWMImageStrCodec* pSC) {
 	const COLORFORMAT cf = pSC->m_param.cfColorFormat;
 	const int cpChroma = cblkChromas[cf] * 16;
-	size_t i, j, jend = (pSC->m_pNextSC != NULL);
+    size_t i, j, jend = 0;//(pSC->m_pNextSC != NULL);
+
+		#if 0
+			int k;
+
+			printf("\np0MBbuffer\n");
+			for (i=0;i<16;i++){
+				for (k=0;k<16;k++){
+				printf("%d ",*(pSC->p0MBbuffer[0]+k+i*16));
+				}
+				printf("\n");
+			}
+			printf("\np1MBbuffer\n");
+			for (i=0;i<16;i++){
+				for (k=0;k<16;k++){
+				printf("%d ",*(pSC->p1MBbuffer[0]+k+i*16));
+				}
+				printf("\n");
+			}
+		#endif
 
 	assert(pSC->m_bSecondary == FALSE);
 	for (j = 0; j <= jend; j++) {
 		int cpStride = 16 * 16;
 		for (i = 0; i < pSC->m_param.cNumChannels; i++) {
+			//cNumChannels==1
 			pSC->pPlane[i] = pSC->p0MBbuffer[i];
-
+			//YD added leave channel buffer problem
 			pSC->p0MBbuffer[i] += cpStride;
 			pSC->p1MBbuffer[i] += cpStride;
-
+			
 			cpStride = cpChroma;
 		}
-		pSC = pSC->m_pNextSC;
+		#if 0
+			printf("\npPlane\n");
+			for (i=0;i<16;i++){
+				for (k=0;k<16;k++){
+				printf("%d ",*(pSC->pPlane[0]+k+i*16));
+				}
+				printf("\n");
+			}
+		#endif
+		//pSC = pSC->m_pNextSC;
 	}
 }
 
 /* advance to next MB row */
 Void advanceOneMBRow(CWMImageStrCodec *pSC) {
-	size_t i, j, jend = (pSC->m_pNextSC != NULL);
+    size_t i, j, jend = 0;//(pSC->m_pNextSC != NULL);
 	CWMIPredInfo *pPredInfo;
 
 	for (j = 0; j <= jend; j++) {
@@ -222,19 +252,19 @@ Void advanceOneMBRow(CWMImageStrCodec *pSC) {
 			pSC->PredInfo[i] = pSC->PredInfoPrevRow[i];
 			pSC->PredInfoPrevRow[i] = pPredInfo;
 		}
-		pSC = pSC->m_pNextSC;
+		//pSC = pSC->m_pNextSC;
 	}
 }
 
 Void swapMRPtr(CWMImageStrCodec* pSC) {
 	PixelI *pTemp[MAX_CHANNELS];
-	size_t j, jend = (pSC->m_pNextSC != NULL);
+    size_t j, jend = 0;//(pSC->m_pNextSC != NULL);
 
 	for (j = 0; j <= jend; j++) {
 		memcpy(pTemp, pSC->a0MBbuffer, sizeof(pSC->a0MBbuffer));
 		memcpy(pSC->a0MBbuffer, pSC->a1MBbuffer, sizeof(pSC->a0MBbuffer));
 		memcpy(pSC->a1MBbuffer, pTemp, sizeof(pSC->a0MBbuffer));
-		pSC = pSC->m_pNextSC;
+		//pSC = pSC->m_pNextSC;
 	}
 }
 

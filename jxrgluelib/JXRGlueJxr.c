@@ -28,15 +28,17 @@
 #include <limits.h>
 #include <JXRGlue.h>
 
+#include "strcodec.h"
+
 static const char szHDPhotoFormat[] =
-		"<dc:format>image/vnd.ms-photo</dc:format>";
+"<dc:format>image/vnd.ms-photo</dc:format>";
 const U32 IFDEntryTypeSizes[] = { 0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8 };
 const U32 SizeofIFDEntry = sizeof(struct IFDEntry);
 
 void CalcMetadataSizeLPSTR(const DPKPROPVARIANT var, U16 *pcInactiveMetadata,
-		U32 *pcbOffsetSize, U32 *pcbCount) {
+	U32 *pcbOffsetSize, U32 *pcbCount) {
 	if (DPKVT_EMPTY != var.vt) {
-		U32 uiLenWithNull = (U32) strlen(var.VT.pszVal) + 1; // +1 for NULL;
+		U32 uiLenWithNull = (U32)strlen(var.VT.pszVal) + 1; // +1 for NULL;
 		assert(DPKVT_LPSTR == var.vt);
 
 		// We only use offset if size > 4
@@ -45,15 +47,16 @@ void CalcMetadataSizeLPSTR(const DPKPROPVARIANT var, U16 *pcInactiveMetadata,
 
 		if (pcbCount)
 			*pcbCount = uiLenWithNull;
-	} else
+	}
+	else
 		*pcInactiveMetadata += 1;
 }
 
 void CalcMetadataSizeLPWSTR(const DPKPROPVARIANT var, U16 *pcInactiveMetadata,
-		U32 *pcbOffsetSize, U32 *pcbCount) {
+	U32 *pcbOffsetSize, U32 *pcbCount) {
 	if (DPKVT_EMPTY != var.vt) {
 		U32 uiCBWithNull = sizeof(U16)
-				* ((U32) wcslen((wchar_t *) var.VT.pwszVal) + 1); // +1 for NULL term;
+			* ((U32)wcslen((wchar_t *)var.VT.pwszVal) + 1); // +1 for NULL term;
 		assert(DPKVT_LPWSTR == var.vt);
 
 		// We only use offset if size > 4
@@ -62,62 +65,65 @@ void CalcMetadataSizeLPWSTR(const DPKPROPVARIANT var, U16 *pcInactiveMetadata,
 
 		if (pcbCount)
 			*pcbCount = uiCBWithNull;
-	} else
+	}
+	else
 		*pcInactiveMetadata += 1;
 }
 
 void CalcMetadataSizeUI2(const DPKPROPVARIANT var, U16 *pcInactiveMetadata,
-		U32 *pcbMetadataSize) {
-	UNREFERENCED_PARAMETER( pcbMetadataSize);
+	U32 *pcbMetadataSize) {
+	UNREFERENCED_PARAMETER(pcbMetadataSize);
 	if (DPKVT_EMPTY != var.vt) {
 		assert(DPKVT_UI2 == var.vt);
 		// This is a single UI2, so it will not be written via offset, but rather as value
-	} else
+	}
+	else
 		*pcInactiveMetadata += 1;
 }
 
 void CalcMetadataSizeUI4(const DPKPROPVARIANT var, U16 *pcInactiveMetadata,
-		U32 *pcbContainer) {
-	UNREFERENCED_PARAMETER( pcbContainer);
+	U32 *pcbContainer) {
+	UNREFERENCED_PARAMETER(pcbContainer);
 	if (DPKVT_EMPTY != var.vt) {
 		assert(DPKVT_UI4 == var.vt);
 		// This is a single UI4, so it will not be written via offset, but rather as value
-	} else
+	}
+	else
 		*pcInactiveMetadata += 1;
 }
 
 ERR CalcMetadataOffsetSize(PKImageEncode* pIE, U16 *pcInactiveMetadata,
-		U32 *pcbMetadataSize) {
+	U32 *pcbMetadataSize) {
 	ERR err = WMP_errSuccess;
 
 	CalcMetadataSizeLPSTR(pIE->sDescMetadata.pvarImageDescription,
-			pcInactiveMetadata, pcbMetadataSize, NULL);
+		pcInactiveMetadata, pcbMetadataSize, NULL);
 	CalcMetadataSizeLPSTR(pIE->sDescMetadata.pvarCameraMake, pcInactiveMetadata,
-			pcbMetadataSize, NULL);
+		pcbMetadataSize, NULL);
 	CalcMetadataSizeLPSTR(pIE->sDescMetadata.pvarCameraModel,
-			pcInactiveMetadata, pcbMetadataSize, NULL);
+		pcInactiveMetadata, pcbMetadataSize, NULL);
 	CalcMetadataSizeLPSTR(pIE->sDescMetadata.pvarSoftware, pcInactiveMetadata,
-			pcbMetadataSize, NULL);
+		pcbMetadataSize, NULL);
 	CalcMetadataSizeLPSTR(pIE->sDescMetadata.pvarDateTime, pcInactiveMetadata,
-			pcbMetadataSize, NULL);
+		pcbMetadataSize, NULL);
 	CalcMetadataSizeLPSTR(pIE->sDescMetadata.pvarArtist, pcInactiveMetadata,
-			pcbMetadataSize, NULL);
+		pcbMetadataSize, NULL);
 	CalcMetadataSizeLPSTR(pIE->sDescMetadata.pvarCopyright, pcInactiveMetadata,
-			pcbMetadataSize, NULL);
+		pcbMetadataSize, NULL);
 	CalcMetadataSizeUI2(pIE->sDescMetadata.pvarRatingStars, pcInactiveMetadata,
-			pcbMetadataSize);
+		pcbMetadataSize);
 	CalcMetadataSizeUI2(pIE->sDescMetadata.pvarRatingValue, pcInactiveMetadata,
-			pcbMetadataSize);
+		pcbMetadataSize);
 	CalcMetadataSizeLPWSTR(pIE->sDescMetadata.pvarCaption, pcInactiveMetadata,
-			pcbMetadataSize, NULL);
+		pcbMetadataSize, NULL);
 	CalcMetadataSizeLPSTR(pIE->sDescMetadata.pvarDocumentName,
-			pcInactiveMetadata, pcbMetadataSize, NULL);
+		pcInactiveMetadata, pcbMetadataSize, NULL);
 	CalcMetadataSizeLPSTR(pIE->sDescMetadata.pvarPageName, pcInactiveMetadata,
-			pcbMetadataSize, NULL);
+		pcbMetadataSize, NULL);
 	CalcMetadataSizeUI4(pIE->sDescMetadata.pvarPageNumber, pcInactiveMetadata,
-			pcbMetadataSize);
+		pcbMetadataSize);
 	CalcMetadataSizeLPSTR(pIE->sDescMetadata.pvarHostComputer,
-			pcInactiveMetadata, pcbMetadataSize, NULL);
+		pcInactiveMetadata, pcbMetadataSize, NULL);
 
 	return err;
 }
@@ -131,14 +137,14 @@ ERR CopyDescMetadata(DPKPROPVARIANT *pvarDst, const DPKPROPVARIANT varSrc) {
 	case DPKVT_LPSTR:
 		pvarDst->vt = DPKVT_LPSTR;
 		uiSize = strlen(varSrc.VT.pszVal) + 1;
-		Call(PKAlloc((void **) &pvarDst->VT.pszVal, uiSize));
+		Call(PKAlloc((void **)&pvarDst->VT.pszVal, uiSize));
 		memcpy(pvarDst->VT.pszVal, varSrc.VT.pszVal, uiSize);
 		break;
 
 	case DPKVT_LPWSTR:
 		pvarDst->vt = DPKVT_LPWSTR;
-		uiSize = sizeof(U16) * (wcslen((wchar_t *) varSrc.VT.pwszVal) + 1); // +1 for NULL term
-		Call(PKAlloc((void **) &pvarDst->VT.pszVal, uiSize));
+		uiSize = sizeof(U16)* (wcslen((wchar_t *)varSrc.VT.pwszVal) + 1); // +1 for NULL term
+		Call(PKAlloc((void **)&pvarDst->VT.pszVal, uiSize));
 		memcpy(pvarDst->VT.pwszVal, varSrc.VT.pwszVal, uiSize);
 		break;
 
@@ -162,17 +168,17 @@ ERR CopyDescMetadata(DPKPROPVARIANT *pvarDst, const DPKPROPVARIANT varSrc) {
 		break;
 	}
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 void FreeDescMetadata(DPKPROPVARIANT *pvar) {
 	switch (pvar->vt) {
 	case DPKVT_LPSTR:
-		PKFree((void **) &pvar->VT.pszVal);
+		PKFree((void **)&pvar->VT.pszVal);
 		break;
 
 	case DPKVT_LPWSTR:
-		PKFree((void **) &pvar->VT.pwszVal);
+		PKFree((void **)&pvar->VT.pwszVal);
 		break;
 
 	default:
@@ -187,7 +193,7 @@ void FreeDescMetadata(DPKPROPVARIANT *pvar) {
 }
 
 ERR WriteDescMetadata(PKImageEncode *pIE, const DPKPROPVARIANT var,
-		WmpDE *pwmpDE, U32 *puiCurrDescMetadataOffset, size_t *poffPos) {
+	WmpDE *pwmpDE, U32 *puiCurrDescMetadataOffset, size_t *poffPos) {
 	ERR err = WMP_errSuccess;
 	WmpDEMisc* pDEMisc = &pIE->WMP.wmiDEMisc;
 	struct WMPStream* pWS = pIE->pStream;
@@ -197,7 +203,7 @@ ERR WriteDescMetadata(PKImageEncode *pIE, const DPKPROPVARIANT var,
 	U16 uiTemp = 0;
 
 	if (0 == pDEMisc->uDescMetadataOffset
-			|| 0 == pDEMisc->uDescMetadataByteCount)
+		|| 0 == pDEMisc->uDescMetadataByteCount)
 		goto Cleanup;
 	// Nothing to do here
 
@@ -212,18 +218,18 @@ ERR WriteDescMetadata(PKImageEncode *pIE, const DPKPROPVARIANT var,
 		CalcMetadataSizeLPSTR(var, &uiTemp, &uiMetadataOffsetSize, &uiCount);
 		pwmpDE->uCount = uiCount;
 		pwmpDE->uValueOrOffset = pDEMisc->uDescMetadataOffset
-				+ *puiCurrDescMetadataOffset;
+			+ *puiCurrDescMetadataOffset;
 		Call(
-				WriteWmpDE(pWS, poffPos, pwmpDE, (U8*)var.VT.pszVal, &uiDataWrittenToOffset));
+			WriteWmpDE(pWS, poffPos, pwmpDE, (U8*)var.VT.pszVal, &uiDataWrittenToOffset));
 		break;
 
 	case DPKVT_LPWSTR:
 		CalcMetadataSizeLPWSTR(var, &uiTemp, &uiMetadataOffsetSize, &uiCount);
 		pwmpDE->uCount = uiCount;
 		pwmpDE->uValueOrOffset = pDEMisc->uDescMetadataOffset
-				+ *puiCurrDescMetadataOffset;
+			+ *puiCurrDescMetadataOffset;
 		Call(
-				WriteWmpDE(pWS, poffPos, pwmpDE, (U8*)var.VT.pwszVal, &uiDataWrittenToOffset));
+			WriteWmpDE(pWS, poffPos, pwmpDE, (U8*)var.VT.pwszVal, &uiDataWrittenToOffset));
 		break;
 
 	case DPKVT_UI2:
@@ -251,7 +257,7 @@ ERR WriteDescMetadata(PKImageEncode *pIE, const DPKPROPVARIANT var,
 	// Sanity check after
 	assert(*puiCurrDescMetadataOffset <= pDEMisc->uDescMetadataByteCount); // Can be equal
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 //================================================================
@@ -272,38 +278,38 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 	U32 uiCurrDescMetadataOffset = 0;
 
 	static WmpDE wmpDEs[] = {
-			{ WMP_tagDocumentName, WMP_typASCII, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagImageDescription, WMP_typASCII, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagCameraMake, WMP_typASCII, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagCameraModel, WMP_typASCII, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagPageName, WMP_typASCII, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagPageNumber, WMP_typSHORT, 2, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagSoftware, WMP_typASCII, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagDateTime, WMP_typASCII, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagArtist, WMP_typASCII, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagHostComputer, WMP_typASCII, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagRatingStars, WMP_typSHORT, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagRatingValue, WMP_typSHORT, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagCopyright, WMP_typASCII, 1, (U32) -1 }, // Descriptive metadata
-			{ WMP_tagCaption, WMP_typBYTE, 1, (U32) -1 }, // Descriptive metadata
+		{ WMP_tagDocumentName, WMP_typASCII, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagImageDescription, WMP_typASCII, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagCameraMake, WMP_typASCII, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagCameraModel, WMP_typASCII, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagPageName, WMP_typASCII, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagPageNumber, WMP_typSHORT, 2, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagSoftware, WMP_typASCII, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagDateTime, WMP_typASCII, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagArtist, WMP_typASCII, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagHostComputer, WMP_typASCII, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagRatingStars, WMP_typSHORT, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagRatingValue, WMP_typSHORT, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagCopyright, WMP_typASCII, 1, (U32)-1 }, // Descriptive metadata
+		{ WMP_tagCaption, WMP_typBYTE, 1, (U32)-1 }, // Descriptive metadata
 
-			{ WMP_tagXMPMetadata, WMP_typBYTE, 1, (U32) -1 }, {
-					WMP_tagIPTCNAAMetadata, WMP_typBYTE, 1, (U32) -1 }, {
-					WMP_tagPhotoshopMetadata, WMP_typBYTE, 1, (U32) -1 }, {
-					WMP_tagEXIFMetadata, WMP_typLONG, 1, (U32) -1 }, {
-					WMP_tagIccProfile, WMP_typUNDEFINED, 1, (U32) -1 }, {
-					WMP_tagGPSInfoMetadata, WMP_typLONG, 1, (U32) -1 },
+		{ WMP_tagXMPMetadata, WMP_typBYTE, 1, (U32)-1 }, {
+			WMP_tagIPTCNAAMetadata, WMP_typBYTE, 1, (U32)-1 }, {
+				WMP_tagPhotoshopMetadata, WMP_typBYTE, 1, (U32)-1 }, {
+					WMP_tagEXIFMetadata, WMP_typLONG, 1, (U32)-1 }, {
+						WMP_tagIccProfile, WMP_typUNDEFINED, 1, (U32)-1 }, {
+							WMP_tagGPSInfoMetadata, WMP_typLONG, 1, (U32)-1 },
 
-			{ WMP_tagPixelFormat, WMP_typBYTE, 16, (U32) -1 }, {
-					WMP_tagTransformation, WMP_typLONG, 1, (U32) -1 }, {
-					WMP_tagImageWidth, WMP_typLONG, 1, (U32) -1 }, {
-					WMP_tagImageHeight, WMP_typLONG, 1, (U32) -1 }, {
-					WMP_tagWidthResolution, WMP_typFLOAT, 1, (U32) -1 }, {
-					WMP_tagHeightResolution, WMP_typFLOAT, 1, (U32) -1 }, {
-					WMP_tagImageOffset, WMP_typLONG, 1, (U32) -1 }, {
-					WMP_tagImageByteCount, WMP_typLONG, 1, (U32) -1 }, {
-					WMP_tagAlphaOffset, WMP_typLONG, 1, (U32) -1 }, {
-					WMP_tagAlphaByteCount, WMP_typLONG, 1, (U32) -1 }, };
+							{ WMP_tagPixelFormat, WMP_typBYTE, 16, (U32)-1 }, {
+								WMP_tagTransformation, WMP_typLONG, 1, (U32)-1 }, {
+									WMP_tagImageWidth, WMP_typLONG, 1, (U32)-1 }, {
+										WMP_tagImageHeight, WMP_typLONG, 1, (U32)-1 }, {
+											WMP_tagWidthResolution, WMP_typFLOAT, 1, (U32)-1 }, {
+												WMP_tagHeightResolution, WMP_typFLOAT, 1, (U32)-1 }, {
+													WMP_tagImageOffset, WMP_typLONG, 1, (U32)-1 }, {
+														WMP_tagImageByteCount, WMP_typLONG, 1, (U32)-1 }, {
+															WMP_tagAlphaOffset, WMP_typLONG, 1, (U32)-1 }, {
+																WMP_tagAlphaByteCount, WMP_typLONG, 1, (U32)-1 }, };
 	U16 cWmpDEs = sizeof(wmpDEs) / sizeof(wmpDEs[0]);
 	WmpDE wmpDE = { 0 };
 	size_t i = 0;
@@ -313,9 +319,9 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 
 	// const unsigned char Zero[0x20] = { 0 };
 	const unsigned char Zero[sizeof(struct IFDEntry) * sizeof(wmpDEs)
-			/ sizeof(wmpDEs[0]) + sizeof(U32)] = { 0 };
+		/ sizeof(wmpDEs[0]) + sizeof(U32)] = { 0 };
 	assert(
-			SizeofIFDEntry * sizeof(wmpDEs) / sizeof(wmpDEs[0]) + sizeof(U32)
+		SizeofIFDEntry * sizeof(wmpDEs) / sizeof(wmpDEs[0]) + sizeof(U32)
 					> 0x20);
 
 	//================
@@ -333,14 +339,14 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 
 	//================
 	// Write overflow area
-	pDEMisc->uOffPixelFormat = (U32) offPos;
+	pDEMisc->uOffPixelFormat = (U32)offPos;
 	PI.pGUIDPixFmt = &pIE->guidPixFormat;
 	PixelFormatLookup(&PI, LOOKUP_FORWARD);
 
 	//Call(pWS->Write(pWS, PI.pGUIDPixFmt, sizeof(*PI.pGUIDPixFmt))); offPos += 16;
 	/** following code is endian-agnostic **/
 	{
-		unsigned char *pGuid = (unsigned char *) &pIE->guidPixFormat;
+		unsigned char *pGuid = (unsigned char *)&pIE->guidPixFormat;
 		Call(PutULong(pWS, offPos, ((U32 *)pGuid)[0]));
 		Call(PutUShort(pWS, offPos + 4, ((U16 *)(pGuid + 4))[0]));
 		Call(PutUShort(pWS, offPos + 6, ((U16 *)(pGuid + 6))[0]));
@@ -351,7 +357,7 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 	//================
 	// Tally up space required for descriptive metadata 
 	Call(
-			CalcMetadataOffsetSize(pIE, &cInactiveMetadata, &cbMetadataOffsetSize));
+		CalcMetadataOffsetSize(pIE, &cInactiveMetadata, &cbMetadataOffsetSize));
 	cWmpDEs -= cInactiveMetadata;
 
 	//================
@@ -359,7 +365,7 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 	assert(offPos <= OFFSET_OF_PFD); // otherwise stuff is overwritten
 	if (offPos < OFFSET_OF_PFD)
 		Call(pWS->Write(pWS, Zero, OFFSET_OF_PFD - offPos));
-	offPos = (size_t) OFFSET_OF_PFD;
+	offPos = (size_t)OFFSET_OF_PFD;
 
 	if (!pIE->WMP.bHasAlpha || pIE->WMP.wmiSCP.uAlphaMode != 2) //no planar alpha
 		cWmpDEs -= 2;
@@ -382,8 +388,8 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 	if (0 == pIE->cbGPSInfoMetadataByteCount)
 		cWmpDEs -= 1; // No GPSInfo metadata
 
-	pDEMisc->uImageOffset = (U32) (offPos + sizeof(U16)
-			+ SizeofIFDEntry * cWmpDEs + sizeof(U32));
+	pDEMisc->uImageOffset = (U32)(offPos + sizeof(U16)
+		+SizeofIFDEntry * cWmpDEs + sizeof(U32));
 
 	if (cbMetadataOffsetSize > 0) {
 		pDEMisc->uDescMetadataByteCount = cbMetadataOffsetSize;
@@ -431,72 +437,72 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagDocumentName == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarDocumentName, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarDocumentName, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagImageDescription == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarImageDescription, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarImageDescription, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagCameraMake == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarCameraMake, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarCameraMake, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagCameraModel == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarCameraModel, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarCameraModel, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagPageName == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarPageName, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarPageName, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagPageNumber == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarPageNumber, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarPageNumber, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagSoftware == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarSoftware, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarSoftware, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagDateTime == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarDateTime, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarDateTime, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagArtist == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarArtist, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarArtist, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagHostComputer == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarHostComputer, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarHostComputer, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagRatingStars == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarRatingStars, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarRatingStars, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagRatingValue == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarRatingValue, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarRatingValue, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagCopyright == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarCopyright, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarCopyright, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagCaption == wmpDE.uTag);
 	Call(
-			WriteDescMetadata(pIE, pIE->sDescMetadata.pvarCaption, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
+		WriteDescMetadata(pIE, pIE->sDescMetadata.pvarCaption, &wmpDE, &uiCurrDescMetadataOffset, &offPos));
 
 	// XMP Metadata
 	wmpDE = wmpDEs[i++];
@@ -526,7 +532,7 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 		wmpDE.uCount = pIE->cbPhotoshopMetadataByteCount;
 		wmpDE.uValueOrOffset = pDEMisc->uPhotoshopMetadataOffset;
 		Call(
-				WriteWmpDE(pWS, &offPos, &wmpDE, pIE->pbPhotoshopMetadata, &uiTemp));
+			WriteWmpDE(pWS, &offPos, &wmpDE, pIE->pbPhotoshopMetadata, &uiTemp));
 	}
 
 	// EXIF Metadata
@@ -542,10 +548,10 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 		wmpDE.uValueOrOffset = pDEMisc->uEXIFMetadataOffset;
 		Call(WriteWmpDE(pWS, &offPos, &wmpDE, NULL, NULL));
 
-		Call(PKAlloc((void **) &pbEXIFMetadata, pIE->cbEXIFMetadataByteCount));
+		Call(PKAlloc((void **)&pbEXIFMetadata, pIE->cbEXIFMetadataByteCount));
 		uiTemp = pDEMisc->uEXIFMetadataOffset;
 		Call(
-				BufferCopyIFD(pIE->pbEXIFMetadata, pIE->cbEXIFMetadataByteCount, 0, WMP_INTEL_ENDIAN, pbEXIFMetadata - uiTemp, uiTemp + pIE->cbEXIFMetadataByteCount, &uiTemp));
+			BufferCopyIFD(pIE->pbEXIFMetadata, pIE->cbEXIFMetadataByteCount, 0, WMP_INTEL_ENDIAN, pbEXIFMetadata - uiTemp, uiTemp + pIE->cbEXIFMetadataByteCount, &uiTemp));
 		Call(pWS->SetPos(pWS, pDEMisc->uEXIFMetadataOffset));
 		Call(pWS->Write(pWS, pbEXIFMetadata, pIE->cbEXIFMetadataByteCount));
 	}
@@ -570,18 +576,18 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 			Call(pWS->Write(pWS, Zero, 1));
 		}
 		pDEMisc->uGPSInfoMetadataOffset +=
-				(pDEMisc->uGPSInfoMetadataOffset & 1);
+			(pDEMisc->uGPSInfoMetadataOffset & 1);
 		wmpDE.uValueOrOffset = pDEMisc->uGPSInfoMetadataOffset;
 		Call(WriteWmpDE(pWS, &offPos, &wmpDE, NULL, NULL));
 
 		Call(
-				PKAlloc((void **) &pbGPSInfoMetadata, pIE->cbGPSInfoMetadataByteCount));
+			PKAlloc((void **)&pbGPSInfoMetadata, pIE->cbGPSInfoMetadataByteCount));
 		uiTemp = pDEMisc->uGPSInfoMetadataOffset;
 		Call(
-				BufferCopyIFD(pIE->pbGPSInfoMetadata, pIE->cbGPSInfoMetadataByteCount, 0, WMP_INTEL_ENDIAN, pbGPSInfoMetadata - uiTemp, uiTemp + pIE->cbGPSInfoMetadataByteCount, &uiTemp));
+			BufferCopyIFD(pIE->pbGPSInfoMetadata, pIE->cbGPSInfoMetadataByteCount, 0, WMP_INTEL_ENDIAN, pbGPSInfoMetadata - uiTemp, uiTemp + pIE->cbGPSInfoMetadataByteCount, &uiTemp));
 		Call(pWS->SetPos(pWS, pDEMisc->uGPSInfoMetadataOffset));
 		Call(
-				pWS->Write(pWS, pbGPSInfoMetadata, pIE->cbGPSInfoMetadataByteCount));
+			pWS->Write(pWS, pbGPSInfoMetadata, pIE->cbGPSInfoMetadataByteCount));
 	}
 
 	wmpDE = wmpDEs[i++];
@@ -606,12 +612,12 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagWidthResolution == wmpDE.uTag);
-	*((float *) &wmpDE.uValueOrOffset) = pIE->fResX;
+	*((float *)&wmpDE.uValueOrOffset) = pIE->fResX;
 	Call(WriteWmpDE(pWS, &offPos, &wmpDE, NULL, NULL));
 
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagHeightResolution == wmpDE.uTag);
-	*((float *) &wmpDE.uValueOrOffset) = pIE->fResY;
+	*((float *)&wmpDE.uValueOrOffset) = pIE->fResY;
 	Call(WriteWmpDE(pWS, &offPos, &wmpDE, NULL, NULL));
 
 	wmpDE = wmpDEs[i++];
@@ -622,7 +628,7 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 	// fix up in WriteContainerPost()
 	wmpDE = wmpDEs[i++];
 	assert(WMP_tagImageByteCount == wmpDE.uTag);
-	pDEMisc->uOffImageByteCount = (U32) offPos;
+	pDEMisc->uOffImageByteCount = (U32)offPos;
 	wmpDE.uValueOrOffset = 0;
 	Call(WriteWmpDE(pWS, &offPos, &wmpDE, NULL, NULL));
 
@@ -630,14 +636,14 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 		// fix up in WriteContainerPost()
 		wmpDE = wmpDEs[i++];
 		assert(WMP_tagAlphaOffset == wmpDE.uTag);
-		pDEMisc->uOffAlphaOffset = (U32) offPos;
+		pDEMisc->uOffAlphaOffset = (U32)offPos;
 		wmpDE.uValueOrOffset = 0;
 		Call(WriteWmpDE(pWS, &offPos, &wmpDE, NULL, NULL));
 
 		// fix up in WriteContainerPost()
 		wmpDE = wmpDEs[i++];
 		assert(WMP_tagAlphaByteCount == wmpDE.uTag);
-		pDEMisc->uOffAlphaByteCount = (U32) offPos;
+		pDEMisc->uOffAlphaByteCount = (U32)offPos;
 		wmpDE.uValueOrOffset = 0;
 		Call(WriteWmpDE(pWS, &offPos, &wmpDE, NULL, NULL));
 	}
@@ -648,19 +654,19 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 
 	assert(0 == (offPos & 1));
 	if (pDEMisc->uColorProfileOffset > 0 || pDEMisc->uDescMetadataOffset > 0
-			|| pDEMisc->uXMPMetadataOffset > 0
-			|| pDEMisc->uIPTCNAAMetadataOffset > 0
-			|| pDEMisc->uPhotoshopMetadataOffset > 0
-			|| pDEMisc->uEXIFMetadataOffset > 0
-			|| pDEMisc->uGPSInfoMetadataOffset > 0) {
+		|| pDEMisc->uXMPMetadataOffset > 0
+		|| pDEMisc->uIPTCNAAMetadataOffset > 0
+		|| pDEMisc->uPhotoshopMetadataOffset > 0
+		|| pDEMisc->uEXIFMetadataOffset > 0
+		|| pDEMisc->uGPSInfoMetadataOffset > 0) {
 		assert(
-				pDEMisc->uColorProfileOffset == offPos
-						|| pDEMisc->uDescMetadataOffset == offPos
-						|| pDEMisc->uXMPMetadataOffset == offPos
-						|| pDEMisc->uIPTCNAAMetadataOffset == offPos
-						|| pDEMisc->uPhotoshopMetadataOffset == offPos
-						|| pDEMisc->uEXIFMetadataOffset == offPos
-						|| pDEMisc->uGPSInfoMetadataOffset == offPos);
+			pDEMisc->uColorProfileOffset == offPos
+			|| pDEMisc->uDescMetadataOffset == offPos
+			|| pDEMisc->uXMPMetadataOffset == offPos
+			|| pDEMisc->uIPTCNAAMetadataOffset == offPos
+			|| pDEMisc->uPhotoshopMetadataOffset == offPos
+			|| pDEMisc->uEXIFMetadataOffset == offPos
+			|| pDEMisc->uGPSInfoMetadataOffset == offPos);
 
 		// OK, now skip to image offset
 		Call(pWS->SetPos(pWS, pDEMisc->uImageOffset));
@@ -668,11 +674,11 @@ ERR WriteContainerPre(PKImageEncode* pIE) {
 	}
 	assert(pDEMisc->uImageOffset == offPos);
 
-	Cleanup: if (pbEXIFMetadata != NULL)
-		PKFree((void **) &pbEXIFMetadata);
-	if (pbGPSInfoMetadata != NULL)
-		PKFree((void **) &pbGPSInfoMetadata);
-	return err;
+Cleanup: if (pbEXIFMetadata != NULL)
+	PKFree((void **)&pbEXIFMetadata);
+		 if (pbGPSInfoMetadata != NULL)
+			 PKFree((void **)&pbGPSInfoMetadata);
+		 return err;
 }
 
 ERR WriteContainerPost(PKImageEncode* pIE) {
@@ -697,246 +703,316 @@ ERR WriteContainerPost(PKImageEncode* pIE) {
 		Call(WriteWmpDE(pWS, &offPos, &deAlphaOffset, NULL, NULL));
 
 		deAlphaByteCount.uValueOrOffset = pIE->WMP.nCbAlpha
-				+ pIE->WMP.nOffAlpha;
+			+ pIE->WMP.nOffAlpha;
 		offPos = pDEMisc->uOffAlphaByteCount;
 		Call(WriteWmpDE(pWS, &offPos, &deAlphaByteCount, NULL, NULL));
 	}
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 //================================================
 ERR PKImageEncode_Initialize_WMP(PKImageEncode* pIE, struct WMPStream* pStream,
-		void* pvParam, size_t cbParam) {
+	void* pvParam, size_t cbParam) {
 	ERR err = WMP_errSuccess;
 
 	FailIf(sizeof(pIE->WMP.wmiSCP) != cbParam, WMP_errInvalidArgument);
 
-	pIE->WMP.wmiSCP = *(CWMIStrCodecParam*) pvParam;
-	pIE->WMP.wmiSCP_Alpha = *(CWMIStrCodecParam*) pvParam;
+	pIE->WMP.wmiSCP = *(CWMIStrCodecParam*)pvParam;
+	pIE->WMP.wmiSCP_Alpha = *(CWMIStrCodecParam*)pvParam;
 	pIE->pStream = pStream;
 
 	pIE->WMP.wmiSCP.pWStream = pIE->pStream;
 	pIE->WMP.wmiSCP_Alpha.pWStream = pIE->pStream;
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_Terminate_WMP(PKImageEncode* pIE) {
 	ERR err = WMP_errSuccess;
-	UNREFERENCED_PARAMETER( pIE);
+	UNREFERENCED_PARAMETER(pIE);
 	return err;
 }
 
 ERR PKImageEncode_EncodeContent_Init(PKImageEncode* pIE, PKPixelInfo PI,
-		U32 cLine, U8* pbPixels, U32 cbStride) {
-	ERR err = WMP_errSuccess;
-
-	// init codec
-	pIE->WMP.wmiI.cWidth = pIE->uWidth;
-	pIE->WMP.wmiI.cHeight = pIE->uHeight;
-	pIE->WMP.wmiI.bdBitDepth = PI.bdBitDepth;
-	pIE->WMP.wmiI.cBitsPerUnit = PI.cbitUnit;
-	pIE->WMP.wmiI.bRGB = !(PI.grBit & PK_pixfmtBGR);
-	pIE->WMP.wmiI.cfColorFormat = PI.cfColorFormat;
-	pIE->WMP.wmiI.oOrientation = pIE->WMP.oOrientation;
-
-	// Set the fPaddedUserBuffer if the following conditions are met
-	if (0 == ((size_t) pbPixels % 128) && // Frame buffer is aligned to 128-byte boundary
-			0 == (pIE->uWidth % 16) && // Horizontal resolution is multiple of 16
-			0 == (cLine % 16) && // Vertical resolution is multiple of 16
-			0 == (cbStride % 128)) // Stride is a multiple of 128 bytes
-					{
-		pIE->WMP.wmiI.fPaddedUserBuffer = TRUE;
-		// Note that there are additional conditions in strenc_x86.c's strEncOpt
-		// which could prevent optimization from being engaged
-	}
-
-	if (PI.cfColorFormat == NCOMPONENT && (!(PI.grBit & PK_pixfmtHasAlpha))) //N-channel without Alpha
-		pIE->WMP.wmiSCP.cChannel = PI.cChannel;
-	else
-		pIE->WMP.wmiSCP.cChannel = PI.cChannel - 1; //other formats and (N-channel + Alpha)
-
-	pIE->idxCurrentLine = 0;
-
-	pIE->WMP.wmiSCP.fMeasurePerf = TRUE;
-
-	FailIf(
-			ICERR_OK != ImageStrEncInit(&pIE->WMP.wmiI, &pIE->WMP.wmiSCP, &pIE->WMP.ctxSC),
-			WMP_errFail);
-
-	Cleanup: return err;
+	U32 cLine, U8* pbPixels, U32 cbStride) {
+	#if 0
+    printf("\t\t\PKImageEncode_EncodeContent_Init %d %d\n",pIE->WMP.wmiI.cWidth,pIE->WMP.wmiI.cHeight);
+	#endif
+    ERR err = WMP_errSuccess;
+	
+    // init codec
+    pIE->WMP.wmiI.cWidth = pIE->uWidth;
+    pIE->WMP.wmiI.cHeight = pIE->uHeight;
+    pIE->WMP.wmiI.bdBitDepth = PI.bdBitDepth;
+    pIE->WMP.wmiI.cBitsPerUnit = PI.cbitUnit;
+    pIE->WMP.wmiI.bRGB = !(PI.grBit & PK_pixfmtBGR);
+    pIE->WMP.wmiI.cfColorFormat = PI.cfColorFormat;
+    pIE->WMP.wmiI.oOrientation = pIE->WMP.oOrientation;
+    
+    // Set the fPaddedUserBuffer if the following conditions are met
+    if (0 == ((size_t) pbPixels % 128) && // Frame buffer is aligned to 128-byte boundary
+        0 == (pIE->uWidth % 16) && // Horizontal resolution is multiple of 16
+        0 == (cLine % 16) && // Vertical resolution is multiple of 16
+        0 == (cbStride % 128)) // Stride is a multiple of 128 bytes
+    {
+        pIE->WMP.wmiI.fPaddedUserBuffer = TRUE;
+        // Note that there are additional conditions in strenc_x86.c's strEncOpt
+        // which could prevent optimization from being engaged
+    }
+    
+    //if (pIE->WMP.bHasAlpha)
+    //{
+    //    pIE->WMP.wmiSCP.cChannel = PI.cChannel - 1;
+    //    pIE->WMP.wmiI.cfColorFormat = PI.cfStripAlpha;
+    //}
+    //else
+    
+    if (PI.cfColorFormat == NCOMPONENT && (!(PI.grBit & PK_pixfmtHasAlpha))) //N-channel without Alpha
+        pIE->WMP.wmiSCP.cChannel = PI.cChannel;
+    else
+        pIE->WMP.wmiSCP.cChannel = PI.cChannel - 1; //other formats and (N-channel + Alpha)
+    
+    pIE->idxCurrentLine = 0;
+    
+    pIE->WMP.wmiSCP.fMeasurePerf = TRUE;
+    FailIf(
+           ICERR_OK != ImageStrEncInit(&pIE->WMP.wmiI, &pIE->WMP.wmiSCP, &pIE->WMP.ctxSC),
+           WMP_errFail);
+    
+Cleanup: return err;
 }
 
 ERR PKImageEncode_EncodeContent_Encode(PKImageEncode* pIE, U32 cLine,
-		U8* pbPixels, U32 cbStride) {
-	ERR err = WMP_errSuccess;
-	U32 i = 0;
-
-	//================================
-	for (i = 0; i < cLine; i += 16) {
-		Bool f420 = (pIE->WMP.wmiI.cfColorFormat == YUV_420
-				|| (pIE->WMP.wmiSCP.bYUVData
-						&& pIE->WMP.wmiSCP.cfColorFormat == YUV_420));
-		CWMImageBufferInfo wmiBI = { 0 };
-		wmiBI.pv = pbPixels + cbStride * i / (f420 ? 2 : 1);
-		wmiBI.cLine = min(16, cLine - i);
-		wmiBI.cbStride = cbStride;
-		FailIf(ICERR_OK != ImageStrEncEncode(pIE->WMP.ctxSC, &wmiBI),
-				WMP_errFail);
-	}
-	pIE->idxCurrentLine += cLine;
-
-	Cleanup: return err;
+	U8* pbPixels, U32 cbStride) {
+	#if 0
+    printf("\t\tPKImageEncode_EncodeContent_Encode %d\n",cLine);
+	#endif
+    ERR err = WMP_errSuccess;
+    U32 i = 0;
+    
+    //================================
+    for (i = 0; i < cLine; i += 16) {
+        Bool f420 = (pIE->WMP.wmiI.cfColorFormat == YUV_420
+                     || (pIE->WMP.wmiSCP.bYUVData
+                         && pIE->WMP.wmiSCP.cfColorFormat == YUV_420));
+        CWMImageBufferInfo wmiBI = { 0 };
+        wmiBI.pv = pbPixels + cbStride * i / (f420 ? 2 : 1);
+        wmiBI.cLine = min(16, cLine - i);
+        wmiBI.cbStride = cbStride;
+        FailIf(ICERR_OK != ImageStrEncEncode(pIE->WMP.ctxSC, &wmiBI),
+               WMP_errFail);
+    }
+    pIE->idxCurrentLine += cLine;
+    
+Cleanup: return err;
 }
 
 ERR PKImageEncode_EncodeContent_Term(PKImageEncode* pIE) {
-	ERR err = WMP_errSuccess;
+    #if 0
+    printf("\n\t\tPKImageEncode_EncodeContent_Term\n");
+	#endif
+    ERR err = WMP_errSuccess;
+    FailIf(ICERR_OK != ImageStrEncTerm(pIE->WMP.ctxSC), WMP_errFail);
 
-	FailIf(ICERR_OK != ImageStrEncTerm(pIE->WMP.ctxSC), WMP_errFail);
-
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_EncodeContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
-		U8* pbPixels, U32 cbStride) {
-	ERR err = WMP_errSuccess;
-	size_t offPos = 0;
-
-	Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
-	pIE->WMP.nOffImage = (Long) offPos;
-
-	Call(PKImageEncode_EncodeContent_Init(pIE, PI, cLine, pbPixels, cbStride));
-	Call(PKImageEncode_EncodeContent_Encode(pIE, cLine, pbPixels, cbStride));
-	Call(PKImageEncode_EncodeContent_Term(pIE));
-
-	Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
-	pIE->WMP.nCbImage = (Long) offPos - pIE->WMP.nOffImage;
-
-	Cleanup: return err;
+	U8* pbPixels, U32 cbStride) {
+	#if 0
+    printf("\tPKImageEncode_EncodeContent\n");
+	#endif
+    ERR err = WMP_errSuccess;
+    size_t offPos = 0;
+    
+    Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
+    pIE->WMP.nOffImage = (Long) offPos;
+    
+	#if 0
+	CWMImageStrCodec* pSC = (CWMImageStrCodec*) pIE->WMP.ctxSC;
+	int const stride=16*16;
+		int i,k;
+		int32_t* const transMB = pSC->transformedImage;
+		for (i=0;i<16;i++){
+			for (k=0;k<16;k++){
+			printf("%d ",*(transMB+k+i*16));
+			}
+			printf("\n");
+		}
+	#endif
+	
+    Call(PKImageEncode_EncodeContent_Init(pIE, PI, cLine, pbPixels, cbStride));
+    Call(PKImageEncode_EncodeContent_Encode(pIE, cLine, pbPixels, cbStride));
+    Call(PKImageEncode_EncodeContent_Term(pIE));
+    
+    Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
+    pIE->WMP.nCbImage = (Long) offPos - pIE->WMP.nOffImage;
+    
+Cleanup: return err;
 }
 
 //zx added to separate tranform from coding 
 
 ERR PKImageEncode_TransformContent_Init(PKImageEncode* pIE, PKPixelInfo PI,
-                U32 cLine, U8* pbPixels, U32 cbStride) {
-        ERR err = WMP_errSuccess;
+	U32 cLine, U8* pbPixels, U32 cbStride) {
+	
+	#if 0
+    printf("\t\tPKImageEncode_TransformContent_Init %d\n",cLine);
+    #endif
+    ERR err = WMP_errSuccess;
+    
+    // init codec
+    pIE->WMP.wmiI.cWidth = pIE->uWidth;
+    pIE->WMP.wmiI.cHeight = pIE->uHeight;
+    pIE->WMP.wmiI.bdBitDepth = PI.bdBitDepth;
+    pIE->WMP.wmiI.cBitsPerUnit = PI.cbitUnit;
+    pIE->WMP.wmiI.bRGB = !(PI.grBit & PK_pixfmtBGR);
+    pIE->WMP.wmiI.cfColorFormat = PI.cfColorFormat;
+    pIE->WMP.wmiI.oOrientation = pIE->WMP.oOrientation;
+    
+    // Set the fPaddedUserBuffer if the following conditions are met
+    if (0 == ((size_t) pbPixels % 128) && // Frame buffer is aligned to 128-byte boundary
+        0 == (pIE->uWidth % 16) && // Horizontal resolution is multiple of 16
+        0 == (cLine % 16) && // Vertical resolution is multiple of 16
+        0 == (cbStride % 128)) // Stride is a multiple of 128 bytes
+    {
+        pIE->WMP.wmiI.fPaddedUserBuffer = TRUE;
+        // Note that there are additional conditions in strenc_x86.c's strEncOpt
+        // which could prevent optimization from being engaged
+    }
+    
+    //if (pIE->WMP.bHasAlpha)
+    //{
+    //    pIE->WMP.wmiSCP.cChannel = PI.cChannel - 1;
+    //    pIE->WMP.wmiI.cfColorFormat = PI.cfStripAlpha;
+    //}
+    //else
+    
+    if (PI.cfColorFormat == NCOMPONENT && (!(PI.grBit & PK_pixfmtHasAlpha))) //N-channel without Alpha
+        pIE->WMP.wmiSCP.cChannel = PI.cChannel;
+    else
+        pIE->WMP.wmiSCP.cChannel = PI.cChannel - 1; //other formats and (N-channel + Alpha)
+    
+    pIE->idxCurrentLine = 0;
+    
+    pIE->WMP.wmiSCP.fMeasurePerf = TRUE;
+	pIE->WMP.wmiSCP.transformedImage = NULL;//YD added
+    FailIf(
+           ICERR_OK != ImageStrEncTransInit(&pIE->WMP.wmiI, &pIE->WMP.wmiSCP, &pIE->WMP.ctxSC),
+           WMP_errFail);
+    
+Cleanup: return err;
 
-        // init codec
-        pIE->WMP.wmiI.cWidth = pIE->uWidth;
-        pIE->WMP.wmiI.cHeight = pIE->uHeight;
-        pIE->WMP.wmiI.bdBitDepth = PI.bdBitDepth;
-        pIE->WMP.wmiI.cBitsPerUnit = PI.cbitUnit;
-        pIE->WMP.wmiI.bRGB = !(PI.grBit & PK_pixfmtBGR);
-        pIE->WMP.wmiI.cfColorFormat = PI.cfColorFormat;
-        pIE->WMP.wmiI.oOrientation = pIE->WMP.oOrientation;
-
-        // Set the fPaddedUserBuffer if the following conditions are met
-        if (0 == ((size_t) pbPixels % 128) && // Frame buffer is aligned to 128-byte boundary
-                        0 == (pIE->uWidth % 16) && // Horizontal resolution is multiple of 16
-                        0 == (cLine % 16) && // Vertical resolution is multiple of 16
-                        0 == (cbStride % 128)) // Stride is a multiple of 128 bytes
-                                        {
-                pIE->WMP.wmiI.fPaddedUserBuffer = TRUE;
-        }
-
-        if (PI.cfColorFormat == NCOMPONENT && (!(PI.grBit & PK_pixfmtHasAlpha))) //N-channel without Alpha
-                pIE->WMP.wmiSCP.cChannel = PI.cChannel;
-        else
-                pIE->WMP.wmiSCP.cChannel = PI.cChannel - 1; //other formats and (N-channel + Alpha)
-
-        pIE->idxCurrentLine = 0;
-
-        pIE->WMP.wmiSCP.fMeasurePerf = TRUE;
-
-        FailIf(
-                        ICERR_OK != ImageStrEncTransInit(&pIE->WMP.wmiI, &pIE->WMP.wmiSCP, &pIE->WMP.ctxSC),
-                        WMP_errFail);
-
-        Cleanup: return err;
 }
 
-ERR PKImageEncode_TransformContent_exe(PKImageEncode* pIE, U32 cLine,
-                U8* pbPixels, U32 cbStride) {
-        ERR err = WMP_errSuccess;
-        U32 i = 0;
+ERR PKImageEncode_TransformContent_Trans(PKImageEncode* pIE, U32 cLine,
+	U8* pbPixels, U32 cbStride) {
+	#if 0
+    printf("\t\tPKImageEncode_TransformContent_Trans %d\n",cLine);
+	#endif
+    ERR err = WMP_errSuccess;
+    U32 i = 0;
+    
+    //================================
+    for (i = 0; i < cLine; i += 16) {
+        Bool f420 = (pIE->WMP.wmiI.cfColorFormat == YUV_420
+                     || (pIE->WMP.wmiSCP.bYUVData
+                         && pIE->WMP.wmiSCP.cfColorFormat == YUV_420));
+        CWMImageBufferInfo wmiBI = { 0 };
+        wmiBI.pv = pbPixels + cbStride * i / (f420 ? 2 : 1);
+        wmiBI.cLine = min(16, cLine - i);
+        wmiBI.cbStride = cbStride;
+        FailIf(ICERR_OK != ImageStrEncTrans(pIE->WMP.ctxSC, &wmiBI),
+               WMP_errFail);	
+	}
+	
+    pIE->idxCurrentLine += cLine;
+    
 
-        //================================
-        for (i = 0; i < cLine; i += 16) {
-                Bool f420 = (pIE->WMP.wmiI.cfColorFormat == YUV_420
-                                || (pIE->WMP.wmiSCP.bYUVData
-                                                && pIE->WMP.wmiSCP.cfColorFormat == YUV_420));
-                CWMImageBufferInfo wmiBI = { 0 };
-                wmiBI.pv = pbPixels + cbStride * i / (f420 ? 2 : 1);
-                wmiBI.cLine = min(16, cLine - i);
-                wmiBI.cbStride = cbStride;
-                FailIf(ICERR_OK != ImageStrEncTrans(pIE->WMP.ctxSC, &wmiBI),
-                                WMP_errFail);
-        }
-        pIE->idxCurrentLine += cLine;
-
-        Cleanup: return err;
+	
+	
+Cleanup: return err;
 }
 
 ERR PKImageEncode_TransformContent_Term(PKImageEncode* pIE) {
-        ERR err = WMP_errSuccess;
+	#if 0
+    printf("\n\t\tPKImageEncode_TransformContent_Term\n");
+    #endif
+    ERR err = WMP_errSuccess;
+	FailIf(ICERR_OK != ImageStrEncTransTerm(pIE->WMP.ctxSC), WMP_errFail);
 
-        FailIf(ICERR_OK != ImageStrEncTransTerm(pIE->WMP.ctxSC), WMP_errFail);
 
-        Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_TransformContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
-		U8* pbPixels, U32 cbStride) {
-	ERR err = WMP_errSuccess;
-	size_t offPos = 0;
-
-	Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
-	pIE->WMP.nOffImage = (Long) offPos;
+	U8* pbPixels, U32 cbStride) {
+	#if 0
+    printf("\tPKImageEncode_TransformContent\n");
+	#endif
+    ERR err = WMP_errSuccess;
+    size_t offPos = 0;
+    
+    Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
+    pIE->WMP.nOffImage = (Long) offPos;
 
 	Call(PKImageEncode_TransformContent_Init(pIE, PI, cLine, pbPixels, cbStride));
-	Call(PKImageEncode_TransformContent_exe(pIE, cLine, pbPixels, cbStride));
+	Call(PKImageEncode_TransformContent_Trans(pIE, cLine, pbPixels, cbStride));
 	Call(PKImageEncode_TransformContent_Term(pIE));
 
 	Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
-	pIE->WMP.nCbImage = (Long) offPos - pIE->WMP.nOffImage;
+	pIE->WMP.nCbImage = (Long)offPos - pIE->WMP.nOffImage;
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_Transform_WMP(PKImageEncode* pIE, U32 cLine, U8* pbPixels, U32 cbStride)
-{
-printf("test_transform\n");
-        ERR err = WMP_errSuccess;
-        PKPixelInfo PI;
+{	
+	#if 0
+	printf("PKImageEncode_Transform_WMP\n");
+    #endif
+    ERR err = WMP_errSuccess;
+    // U32 i = 0;
+    PKPixelInfo PI;
+    
+    // Performing non-banded encode
+    assert(BANDEDENCSTATE_UNINITIALIZED == pIE->WMP.eBandedEncState);
+    pIE->WMP.eBandedEncState = BANDEDENCSTATE_NONBANDEDENCODE;
+    
+    PI.pGUIDPixFmt = &pIE->guidPixFormat;
+    PixelFormatLookup(&PI, LOOKUP_FORWARD);
+    pIE->WMP.bHasAlpha = !!(PI.grBit & PK_pixfmtHasAlpha);
+    
+    if (!pIE->fHeaderDone) {
+        // write metadata
+        Call(WriteContainerPre(pIE));
+        
+        pIE->fHeaderDone = !FALSE;
+    }
+    
+    /*    if (pIE->WMP.bHasAlpha && pIE->WMP.wmiSCP.uAlphaMode == 2){
+     pIE->WMP.wmiSCP_Alpha = pIE->WMP.wmiSCP;
+     }
+     */
 
-        // Performing non-banded encode
-        assert(BANDEDENCSTATE_UNINITIALIZED == pIE->WMP.eBandedEncState);
-        pIE->WMP.eBandedEncState = BANDEDENCSTATE_NONBANDEDENCODE;
-
-        PI.pGUIDPixFmt = &pIE->guidPixFormat;
-        PixelFormatLookup(&PI, LOOKUP_FORWARD);
-
-        if (!pIE->fHeaderDone) {
-                // write metadata
-                Call(WriteContainerPre(pIE));
-                pIE->fHeaderDone = !FALSE;
-        }
-        Call(PKImageEncode_TransformContent(pIE, PI, cLine, pbPixels, cbStride));
-        Call(WriteContainerPost(pIE));
-        Cleanup: return err;
+	Call(PKImageEncode_TransformContent(pIE, PI, cLine, pbPixels, cbStride));
+	//Call(WriteContainerPost(pIE));
+	
+	
+Cleanup: return err;
 
 }
 //  end of zx addition
 
 
 ERR PKImageEncode_EncodeAlpha_Init(PKImageEncode* pIE, PKPixelInfo PI,
-		U32 cLine, U8* pbPixels, U32 cbStride) {
+	U32 cLine, U8* pbPixels, U32 cbStride) {
 	ERR err = WMP_errSuccess;
 
-	UNREFERENCED_PARAMETER( cLine);
-	UNREFERENCED_PARAMETER( pbPixels);
-	UNREFERENCED_PARAMETER( cbStride);
+	UNREFERENCED_PARAMETER(cLine);
+	UNREFERENCED_PARAMETER(pbPixels);
+	UNREFERENCED_PARAMETER(cbStride);
 
 	pIE->WMP.wmiI_Alpha = pIE->WMP.wmiI;
 
@@ -946,27 +1022,27 @@ ERR PKImageEncode_EncodeAlpha_Init(PKImageEncode* pIE, PKPixelInfo PI,
 	pIE->WMP.wmiI_Alpha.cBitsPerUnit = PI.cbitUnit;
 	pIE->WMP.wmiI_Alpha.bRGB = !(PI.grBit & PK_pixfmtBGR);
 	pIE->WMP.wmiI.oOrientation = pIE->WMP.oOrientation;
-//    pIE->WMP.wmiI_Alpha.cLeadingPadding += pIE->WMP.wmiSCP.cChannel;
-//    pIE->WMP.wmiI_Alpha.cLeadingPadding += PI.cChannel - 1;
+	//    pIE->WMP.wmiI_Alpha.cLeadingPadding += pIE->WMP.wmiSCP.cChannel;
+	//    pIE->WMP.wmiI_Alpha.cLeadingPadding += PI.cChannel - 1;
 
 	switch (pIE->WMP.wmiI.bdBitDepth) {
 	case BD_8:
 		pIE->WMP.wmiI_Alpha.cLeadingPadding += (pIE->WMP.wmiI.cBitsPerUnit >> 3)
-				- 1;
+			- 1;
 		break;
 
 	case BD_16:
 	case BD_16S:
 	case BD_16F:
 		pIE->WMP.wmiI_Alpha.cLeadingPadding += (pIE->WMP.wmiI.cBitsPerUnit >> 3)
-				/ sizeof(U16) - 1;
+			/ sizeof(U16)-1;
 		break;
 
 	case BD_32:
 	case BD_32S:
 	case BD_32F:
 		pIE->WMP.wmiI_Alpha.cLeadingPadding += (pIE->WMP.wmiI.cBitsPerUnit >> 3)
-				/ sizeof(float) - 1;
+			/ sizeof(float)-1;
 		break;
 
 	case BD_5:
@@ -976,7 +1052,7 @@ ERR PKImageEncode_EncodeAlpha_Init(PKImageEncode* pIE, PKPixelInfo PI,
 		break;
 	}
 
-//    pIE->WMP.wmiSCP_Alpha.uAlphaMode = 1;
+	//    pIE->WMP.wmiSCP_Alpha.uAlphaMode = 1;
 
 	//assert(pIE->WMP.wmiI_Alpha.cfColorFormat == CF_RGB); // only RGBA is supported for now!
 	pIE->WMP.wmiI_Alpha.cfColorFormat = Y_ONLY;
@@ -986,14 +1062,14 @@ ERR PKImageEncode_EncodeAlpha_Init(PKImageEncode* pIE, PKPixelInfo PI,
 	pIE->idxCurrentLine = 0;
 	pIE->WMP.wmiSCP_Alpha.fMeasurePerf = TRUE;
 	FailIf(
-			ICERR_OK != ImageStrEncInit(&pIE->WMP.wmiI_Alpha, &pIE->WMP.wmiSCP_Alpha, &pIE->WMP.ctxSC_Alpha),
-			WMP_errFail);
+		ICERR_OK != ImageStrEncInit(&pIE->WMP.wmiI_Alpha, &pIE->WMP.wmiSCP_Alpha, &pIE->WMP.ctxSC_Alpha),
+		WMP_errFail);
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_EncodeAlpha_Encode(PKImageEncode* pIE, U32 cLine,
-		U8* pbPixels, U32 cbStride) {
+	U8* pbPixels, U32 cbStride) {
 	ERR err = WMP_errSuccess;
 	U32 i = 0;
 
@@ -1004,11 +1080,11 @@ ERR PKImageEncode_EncodeAlpha_Encode(PKImageEncode* pIE, U32 cLine,
 		wmiBI.cLine = min(16, cLine - i);
 		wmiBI.cbStride = cbStride;
 		FailIf(ICERR_OK != ImageStrEncEncode(pIE->WMP.ctxSC_Alpha, &wmiBI),
-				WMP_errFail);
+			WMP_errFail);
 	}
 	pIE->idxCurrentLine += cLine;
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_EncodeAlpha_Term(PKImageEncode* pIE) {
@@ -1016,11 +1092,11 @@ ERR PKImageEncode_EncodeAlpha_Term(PKImageEncode* pIE) {
 
 	FailIf(ICERR_OK != ImageStrEncTerm(pIE->WMP.ctxSC_Alpha), WMP_errFail);
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_EncodeAlpha(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
-		U8* pbPixels, U32 cbStride) {
+	U8* pbPixels, U32 cbStride) {
 	ERR err = WMP_errSuccess;
 	size_t offPos = 0;
 
@@ -1031,20 +1107,20 @@ ERR PKImageEncode_EncodeAlpha(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 		Call(pIE->pStream->Write(pIE->pStream, &zero, 1));
 		offPos++;
 	}
-	pIE->WMP.nOffAlpha = (Long) offPos;
+	pIE->WMP.nOffAlpha = (Long)offPos;
 
 	Call(PKImageEncode_EncodeAlpha_Init(pIE, PI, cLine, pbPixels, cbStride));
 	Call(PKImageEncode_EncodeAlpha_Encode(pIE, cLine, pbPixels, cbStride));
 	Call(PKImageEncode_EncodeAlpha_Term(pIE));
 
 	Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
-	pIE->WMP.nCbAlpha = (Long) offPos - pIE->WMP.nOffAlpha;
+	pIE->WMP.nCbAlpha = (Long)offPos - pIE->WMP.nOffAlpha;
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 static ERR SetMetadata(PKImageEncode *pIE, const U8 *pbMetadata, U32 cbMetadata,
-		U8** pbSet, U32* pcbSet) {
+	U8** pbSet, U32* pcbSet) {
 	ERR err = WMP_errSuccess;
 
 	// Fail if the caller called us after we've already written the header out
@@ -1055,24 +1131,24 @@ static ERR SetMetadata(PKImageEncode *pIE, const U8 *pbMetadata, U32 cbMetadata,
 	}
 
 	// Make a copy of the metadata
-	PKFree((void **) pbSet);
+	PKFree((void **)pbSet);
 	*pcbSet = 0;
 
-	Call(PKAlloc((void **) pbSet, cbMetadata));
+	Call(PKAlloc((void **)pbSet, cbMetadata));
 	memcpy(*pbSet, pbMetadata, cbMetadata);
 	*pcbSet = cbMetadata;
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_SetColorContext_WMP(PKImageEncode *pIE,
-		const U8 *pbColorContext, U32 cbColorContext) {
+	const U8 *pbColorContext, U32 cbColorContext) {
 	return SetMetadata(pIE, pbColorContext, cbColorContext,
-			&pIE->pbColorContext, &pIE->cbColorContext);
+		&pIE->pbColorContext, &pIE->cbColorContext);
 }
 
 ERR PKImageEncode_SetXMPMetadata_WMP(PKImageEncode *pIE,
-		const U8 *pbXMPMetadata, U32 cbXMPMetadata) { // same as the other Set's, but make sure dc:format is <dc:format>image/vnd.ms-photo</dc:format>
+	const U8 *pbXMPMetadata, U32 cbXMPMetadata) { // same as the other Set's, but make sure dc:format is <dc:format>image/vnd.ms-photo</dc:format>
 	ERR err = WMP_errSuccess;
 	char* pbTemp = 0;
 	U32 cbTemp;
@@ -1084,7 +1160,7 @@ ERR PKImageEncode_SetXMPMetadata_WMP(PKImageEncode *pIE,
 	FailIf(pIE->fHeaderDone, WMP_errOutOfSequence);
 
 	// Free any previously set XMP metadata
-	PKFree((void **) &pIE->pbXMPMetadata);
+	PKFree((void **)&pIE->pbXMPMetadata);
 	pIE->cbXMPMetadataByteCount = 0;
 
 	// allocate a block big enough for data passed in plus added trailing null plus added HD Photo dc:format
@@ -1092,11 +1168,11 @@ ERR PKImageEncode_SetXMPMetadata_WMP(PKImageEncode *pIE,
 	// there may already be a dc:format we will replace with HD Photo's
 	// but anyway this block will be large enough guaranteed
 	cbBuffer = cbXMPMetadata + 1 + sizeof("<dc:format>") - 1
-			+ sizeof("</dc:format>") - 1 + sizeof(szHDPhotoFormat) - 1;
-	Call(PKAlloc((void **) &pbTemp, cbBuffer));
+		+ sizeof("</dc:format>") - 1 + sizeof(szHDPhotoFormat)-1;
+	Call(PKAlloc((void **)&pbTemp, cbBuffer));
 	memcpy(pbTemp, pbXMPMetadata, cbXMPMetadata); // Make a copy of the metadata
 	pbTemp[cbXMPMetadata] = '\0';
-	cbXMPMetadata = (U32) strlen(pbTemp);
+	cbXMPMetadata = (U32)strlen(pbTemp);
 	pszFormatBegin = strstr(pbTemp, "<dc:format>");
 	if (pszFormatBegin != 0) {
 		char* pszFormatEnd;
@@ -1110,54 +1186,55 @@ ERR PKImageEncode_SetXMPMetadata_WMP(PKImageEncode *pIE,
 
 		// photoshop doesn't put a trailing null, so we don't either
 		// hd and tiff don't put a trailing null, so we don't either
-		cbTemp = cbXMPMetadata - (U32) (pszFormatEnd - pszFormatBegin)
-				+ sizeof(szHDPhotoFormat) - 1;
+		cbTemp = cbXMPMetadata - (U32)(pszFormatEnd - pszFormatBegin)
+			+ sizeof(szHDPhotoFormat)-1;
 		assert(cbTemp <= cbBuffer);
 		FailIf(
-				0 != STRCPY_SAFE(pszFormatBegin, cbBuffer - (pszFormatBegin - pbTemp), szHDPhotoFormat),
-				WMP_errBufferOverflow);
-		memcpy(pszFormatBegin + sizeof(szHDPhotoFormat) - 1,
-				pbXMPMetadata + (pszFormatEnd - pbTemp),
-				cbXMPMetadata - (pszFormatEnd - pbTemp));
-	} else {
+			0 != STRCPY_SAFE(pszFormatBegin, cbBuffer - (pszFormatBegin - pbTemp), szHDPhotoFormat),
+			WMP_errBufferOverflow);
+		memcpy(pszFormatBegin + sizeof(szHDPhotoFormat)-1,
+			pbXMPMetadata + (pszFormatEnd - pbTemp),
+			cbXMPMetadata - (pszFormatEnd - pbTemp));
+	}
+	else {
 		cbTemp = cbXMPMetadata;
 	}
 
-	pIE->pbXMPMetadata = (U8 *) pbTemp;
+	pIE->pbXMPMetadata = (U8 *)pbTemp;
 	pIE->cbXMPMetadataByteCount = cbTemp;
 	return (err);
 
-	Cleanup: PKFree((void **) &pbTemp);
+Cleanup: PKFree((void **)&pbTemp);
 	pIE->cbXMPMetadataByteCount = 0;
 	return err;
 }
 
 ERR PKImageEncode_SetEXIFMetadata_WMP(PKImageEncode *pIE,
-		const U8 *pbEXIFMetadata, U32 cbEXIFMetadata) {
+	const U8 *pbEXIFMetadata, U32 cbEXIFMetadata) {
 	return SetMetadata(pIE, pbEXIFMetadata, cbEXIFMetadata,
-			&pIE->pbEXIFMetadata, &pIE->cbEXIFMetadataByteCount);
+		&pIE->pbEXIFMetadata, &pIE->cbEXIFMetadataByteCount);
 }
 
 ERR PKImageEncode_SetGPSInfoMetadata_WMP(PKImageEncode *pIE,
-		const U8 *pbGPSInfoMetadata, U32 cbGPSInfoMetadata) {
+	const U8 *pbGPSInfoMetadata, U32 cbGPSInfoMetadata) {
 	return SetMetadata(pIE, pbGPSInfoMetadata, cbGPSInfoMetadata,
-			&pIE->pbGPSInfoMetadata, &pIE->cbGPSInfoMetadataByteCount);
+		&pIE->pbGPSInfoMetadata, &pIE->cbGPSInfoMetadataByteCount);
 }
 
 ERR PKImageEncode_SetIPTCNAAMetadata_WMP(PKImageEncode *pIE,
-		const U8 *pbIPTCNAAMetadata, U32 cbIPTCNAAMetadata) {
+	const U8 *pbIPTCNAAMetadata, U32 cbIPTCNAAMetadata) {
 	return SetMetadata(pIE, pbIPTCNAAMetadata, cbIPTCNAAMetadata,
-			&pIE->pbIPTCNAAMetadata, &pIE->cbIPTCNAAMetadataByteCount);
+		&pIE->pbIPTCNAAMetadata, &pIE->cbIPTCNAAMetadataByteCount);
 }
 
 ERR PKImageEncode_SetPhotoshopMetadata_WMP(PKImageEncode *pIE,
-		const U8 *pbPhotoshopMetadata, U32 cbPhotoshopMetadata) {
+	const U8 *pbPhotoshopMetadata, U32 cbPhotoshopMetadata) {
 	return SetMetadata(pIE, pbPhotoshopMetadata, cbPhotoshopMetadata,
-			&pIE->pbPhotoshopMetadata, &pIE->cbPhotoshopMetadataByteCount);
+		&pIE->pbPhotoshopMetadata, &pIE->cbPhotoshopMetadataByteCount);
 }
 
 ERR PKImageEncode_SetDescriptiveMetadata_WMP(PKImageEncode *pIE,
-		const DESCRIPTIVEMETADATA *pSrcMeta) {
+	const DESCRIPTIVEMETADATA *pSrcMeta) {
 	ERR err = WMP_errSuccess;
 	DESCRIPTIVEMETADATA *pDstMeta = &pIE->sDescMetadata;
 
@@ -1169,54 +1246,69 @@ ERR PKImageEncode_SetDescriptiveMetadata_WMP(PKImageEncode *pIE,
 
 	// Make a copy of the descriptive metadata
 	Call(
-			CopyDescMetadata(&pDstMeta->pvarImageDescription, pSrcMeta->pvarImageDescription));
+		CopyDescMetadata(&pDstMeta->pvarImageDescription, pSrcMeta->pvarImageDescription));
 	Call(CopyDescMetadata(&pDstMeta->pvarCameraMake, pSrcMeta->pvarCameraMake));
 	Call(
-			CopyDescMetadata(&pDstMeta->pvarCameraModel, pSrcMeta->pvarCameraModel));
+		CopyDescMetadata(&pDstMeta->pvarCameraModel, pSrcMeta->pvarCameraModel));
 	Call(CopyDescMetadata(&pDstMeta->pvarSoftware, pSrcMeta->pvarSoftware));
 	Call(CopyDescMetadata(&pDstMeta->pvarDateTime, pSrcMeta->pvarDateTime));
 	Call(CopyDescMetadata(&pDstMeta->pvarArtist, pSrcMeta->pvarArtist));
 	Call(CopyDescMetadata(&pDstMeta->pvarCopyright, pSrcMeta->pvarCopyright));
 	Call(
-			CopyDescMetadata(&pDstMeta->pvarRatingStars, pSrcMeta->pvarRatingStars));
+		CopyDescMetadata(&pDstMeta->pvarRatingStars, pSrcMeta->pvarRatingStars));
 	Call(
-			CopyDescMetadata(&pDstMeta->pvarRatingValue, pSrcMeta->pvarRatingValue));
+		CopyDescMetadata(&pDstMeta->pvarRatingValue, pSrcMeta->pvarRatingValue));
 	Call(CopyDescMetadata(&pDstMeta->pvarCaption, pSrcMeta->pvarCaption));
 	Call(
-			CopyDescMetadata(&pDstMeta->pvarDocumentName, pSrcMeta->pvarDocumentName));
+		CopyDescMetadata(&pDstMeta->pvarDocumentName, pSrcMeta->pvarDocumentName));
 	Call(CopyDescMetadata(&pDstMeta->pvarPageName, pSrcMeta->pvarPageName));
 	Call(CopyDescMetadata(&pDstMeta->pvarPageNumber, pSrcMeta->pvarPageNumber));
 	Call(
-			CopyDescMetadata(&pDstMeta->pvarHostComputer, pSrcMeta->pvarHostComputer));
+		CopyDescMetadata(&pDstMeta->pvarHostComputer, pSrcMeta->pvarHostComputer));
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
-ERR PKImageEncode_WritePixels_WMP(PKImageEncode* pIE, U32 cLine, U8* pbPixels, U32 cbStride) 
+ERR PKImageEncode_WritePixels_WMP(PKImageEncode* pIE, U32 cLine, U8* pbPixels, U32 cbStride)
 {
-	ERR err = WMP_errSuccess;
-	PKPixelInfo PI;
-
-	// Performing non-banded encode
-	assert(BANDEDENCSTATE_UNINITIALIZED == pIE->WMP.eBandedEncState);
-	pIE->WMP.eBandedEncState = BANDEDENCSTATE_NONBANDEDENCODE;
-
-	PI.pGUIDPixFmt = &pIE->guidPixFormat;
-	PixelFormatLookup(&PI, LOOKUP_FORWARD);
-
-	if (!pIE->fHeaderDone) {
-		// write metadata
-		Call(WriteContainerPre(pIE));
-		pIE->fHeaderDone = !FALSE;
-	}
-
-	Call(PKImageEncode_EncodeContent(pIE, PI, cLine, pbPixels, cbStride));
-	Call(WriteContainerPost(pIE));
-	Cleanup: return err;
+	#if 0
+    printf("\n\nPKImageEncode_WritePixels_WMP\n");
+	#endif
+    ERR err = WMP_errSuccess;
+    // U32 i = 0;
+    PKPixelInfo PI;
+		
+    // Performing non-banded encode
+    //assert(BANDEDENCSTATE_UNINITIALIZED == pIE->WMP.eBandedEncState);
+    pIE->WMP.eBandedEncState = BANDEDENCSTATE_NONBANDEDENCODE;
+    
+    PI.pGUIDPixFmt = &pIE->guidPixFormat;
+    PixelFormatLookup(&PI, LOOKUP_FORWARD);
+    pIE->WMP.bHasAlpha = !!(PI.grBit & PK_pixfmtHasAlpha);
+    
+    if (!pIE->fHeaderDone) {
+        // write metadata
+        Call(WriteContainerPre(pIE));
+        
+        pIE->fHeaderDone = !FALSE;
+    }
+    
+    /*    if (pIE->WMP.bHasAlpha && pIE->WMP.wmiSCP.uAlphaMode == 2){
+     pIE->WMP.wmiSCP_Alpha = pIE->WMP.wmiSCP;
+     }
+     */
+    Call(PKImageEncode_EncodeContent(pIE, PI, cLine, pbPixels, cbStride));
+    if (pIE->WMP.bHasAlpha && pIE->WMP.wmiSCP.uAlphaMode == 2) { //planar alpha
+        Call(PKImageEncode_EncodeAlpha(pIE, PI, cLine, pbPixels, cbStride));
+    }
+    
+    Call(WriteContainerPost(pIE));
+    
+Cleanup: return err;
 }
 
 ERR PKImageEncode_WritePixelsBandedBegin_WMP(PKImageEncode* pIE,
-		struct WMPStream *pPATempFile) {
+struct WMPStream *pPATempFile) {
 	ERR err = WMP_errSuccess;
 
 	// Just make sure that we are in the correct state to begin a banded decode
@@ -1226,12 +1318,12 @@ ERR PKImageEncode_WritePixelsBandedBegin_WMP(PKImageEncode* pIE,
 	// Save the planar alpha tempfile for future use
 	pIE->WMP.pPATempFile = pPATempFile;
 
-//Cleanup:
+	//Cleanup:
 	return err;
 }
 
 ERR PKImageEncode_WritePixelsBanded_WMP(PKImageEncode* pIE, U32 cLine,
-		U8* pbPixels, U32 cbStride, Bool fLastCall) {
+	U8* pbPixels, U32 cbStride, Bool fLastCall) {
 	ERR err = WMP_errSuccess;
 	PKPixelInfo PI = { 0 };
 	Bool fPI = FALSE;
@@ -1240,7 +1332,7 @@ ERR PKImageEncode_WritePixelsBanded_WMP(PKImageEncode* pIE, U32 cLine,
 
 	// Unless this is the last call, reject inputs which are not multiples of 16
 	FailIf(!fLastCall && 0 != cLine % 16,
-			WMP_errMustBeMultipleOf16LinesUntilLastCall);
+		WMP_errMustBeMultipleOf16LinesUntilLastCall);
 
 	if (!pIE->fHeaderDone || BANDEDENCSTATE_INIT == pIE->WMP.eBandedEncState) {
 		PI.pGUIDPixFmt = &pIE->guidPixFormat;
@@ -1251,7 +1343,7 @@ ERR PKImageEncode_WritePixelsBanded_WMP(PKImageEncode* pIE, U32 cLine,
 		// Check if this is planar alpha: banded encode requires temp file
 		if (pIE->WMP.bHasAlpha && pIE->WMP.wmiSCP.uAlphaMode == 2) {
 			FailIf(NULL == pPATempFile,
-					WMP_errPlanarAlphaBandedEncRequiresTempFile);
+				WMP_errPlanarAlphaBandedEncRequiresTempFile);
 		}
 	}
 
@@ -1266,11 +1358,11 @@ ERR PKImageEncode_WritePixelsBanded_WMP(PKImageEncode* pIE, U32 cLine,
 		// Record start of main content for future call to WriteContainerPost
 		size_t offPos;
 		Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
-		pIE->WMP.nOffImage = (Long) offPos;
+		pIE->WMP.nOffImage = (Long)offPos;
 
 		assert(fPI);
 		Call(
-				PKImageEncode_EncodeContent_Init(pIE, PI, cLine, pbPixels, cbStride));
+			PKImageEncode_EncodeContent_Init(pIE, PI, cLine, pbPixels, cbStride));
 		pIE->WMP.eBandedEncState = BANDEDENCSTATE_ENCODING;
 	}
 
@@ -1288,13 +1380,13 @@ ERR PKImageEncode_WritePixelsBanded_WMP(PKImageEncode* pIE, U32 cLine,
 			// For planar alpha, we write the file to a temp file
 			pIE->WMP.wmiSCP_Alpha.pWStream = pPATempFile;
 			Call(
-					PKImageEncode_EncodeAlpha_Init(pIE, PI, cLine, pbPixels, cbStride));
+				PKImageEncode_EncodeAlpha_Init(pIE, PI, cLine, pbPixels, cbStride));
 		}
 
 		Call(PKImageEncode_EncodeAlpha_Encode(pIE, cLine, pbPixels, cbStride));
 	}
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_WritePixelsBandedEnd_WMP(PKImageEncode* pIE) {
@@ -1307,7 +1399,7 @@ ERR PKImageEncode_WritePixelsBandedEnd_WMP(PKImageEncode* pIE) {
 	// Finish off main content, update its length ptr for WriteContainerPost
 	Call(PKImageEncode_EncodeContent_Term(pIE));
 	Call(pMainStream->GetPos(pIE->pStream, &offAlpha));
-	pIE->WMP.nCbImage = (Long) offAlpha - pIE->WMP.nOffImage;
+	pIE->WMP.nCbImage = (Long)offAlpha - pIE->WMP.nOffImage;
 
 	if (pIE->WMP.bHasAlpha && pIE->WMP.wmiSCP.uAlphaMode == 2) {
 		size_t cbAlpha;
@@ -1338,17 +1430,17 @@ ERR PKImageEncode_WritePixelsBandedEnd_WMP(PKImageEncode* pIE) {
 		assert(cbBytesCopied == cbAlpha);
 
 		// Update alpha offset/length for WriteContainerPost
-		pIE->WMP.nOffAlpha = (Long) offAlpha;
-		pIE->WMP.nCbAlpha = (Long) cbAlpha;
+		pIE->WMP.nOffAlpha = (Long)offAlpha;
+		pIE->WMP.nCbAlpha = (Long)cbAlpha;
 	}
 
 	Call(WriteContainerPost(pIE));
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_Transcode_WMP(PKImageEncode* pIE, PKImageDecode* pID,
-		CWMTranscodingParam* pParam) {
+	CWMTranscodingParam* pParam) {
 	ERR err = WMP_errSuccess;
 	Float fResX = 0, fResY = 0;
 	PKPixelFormatGUID pixGUID = { 0 };
@@ -1372,7 +1464,7 @@ ERR PKImageEncode_Transcode_WMP(PKImageEncode* pIE, PKImageDecode* pID,
 	PI.pGUIDPixFmt = &pIE->guidPixFormat;
 	PixelFormatLookup(&PI, LOOKUP_FORWARD);
 	pIE->WMP.bHasAlpha = !!(PI.grBit & PK_pixfmtHasAlpha)
-			&& (2 == pParam->uAlphaMode);
+		&& (2 == pParam->uAlphaMode);
 	assert(0 == pIE->WMP.bHasAlpha || (pParam->uAlphaMode == 2)); // Decode alpha mode does not match encode alpha mode!
 
 	// Check for any situations where transcoder is being asked to convert alpha - we can't do this
@@ -1380,15 +1472,15 @@ ERR PKImageEncode_Transcode_WMP(PKImageEncode* pIE, PKImageDecode* pID,
 	PI.pGUIDPixFmt = &pixGUID;
 	PixelFormatLookup(&PI, LOOKUP_FORWARD);
 	FailIf(0 == (PI.grBit & PK_pixfmtHasAlpha) && pParam->uAlphaMode != 0,
-			WMP_errAlphaModeCannotBeTranscoded);
+		WMP_errAlphaModeCannotBeTranscoded);
 	// Destination is planar/interleaved, src has no alpha
 	FailIf(
-			!!(PI.grBit & PK_pixfmtHasAlpha) && 2 == pParam->uAlphaMode && FALSE == pID->WMP.bHasAlpha,
-			WMP_errAlphaModeCannotBeTranscoded);
+		!!(PI.grBit & PK_pixfmtHasAlpha) && 2 == pParam->uAlphaMode && FALSE == pID->WMP.bHasAlpha,
+		WMP_errAlphaModeCannotBeTranscoded);
 	// Destination is planar, src is interleaved
 	FailIf(
-			!!(PI.grBit & PK_pixfmtHasAlpha) && 3 == pParam->uAlphaMode && pID->WMP.bHasAlpha,
-			WMP_errAlphaModeCannotBeTranscoded);
+		!!(PI.grBit & PK_pixfmtHasAlpha) && 3 == pParam->uAlphaMode && pID->WMP.bHasAlpha,
+		WMP_errAlphaModeCannotBeTranscoded);
 	// Destination is interleaved, src is planar
 	assert(/*pParam->uAlphaMode >= 0 &&*/pParam->uAlphaMode <= 3); // All the above statements make this assumption
 
@@ -1406,38 +1498,38 @@ ERR PKImageEncode_Transcode_WMP(PKImageEncode* pIE, PKImageDecode* pID,
 
 	FailIf(ICERR_OK != WMPhotoTranscode(pWSDec, pWSEnc, pParam), WMP_errFail);
 	Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
-	pIE->WMP.nCbImage = (Long) offPos - pIE->WMP.nOffImage;
+	pIE->WMP.nCbImage = (Long)offPos - pIE->WMP.nOffImage;
 
 	if (fPlanarAlpha) {
-		pIE->WMP.nOffAlpha = (Long) offPos;
+		pIE->WMP.nOffAlpha = (Long)offPos;
 
 		// Cue the stream to alpha block
 		assert(pID->WMP.wmiDEMisc.uAlphaOffset > 0);
 		Call(pWSDec->SetPos(pWSDec, pID->WMP.wmiDEMisc.uAlphaOffset));
 
 		FailIf(ICERR_OK != WMPhotoTranscode(pWSDec, pWSEnc, &tcParamAlpha),
-				WMP_errFail);
+			WMP_errFail);
 		Call(pIE->pStream->GetPos(pIE->pStream, &offPos));
-		pIE->WMP.nCbAlpha = (Long) offPos - pIE->WMP.nOffAlpha;
+		pIE->WMP.nCbAlpha = (Long)offPos - pIE->WMP.nOffAlpha;
 	}
 
 	// fixup matadata
 	Call(WriteContainerPost(pIE));
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_CreateNewFrame_WMP(PKImageEncode* pIE, void* pvParam,
-		size_t cbParam) {
+	size_t cbParam) {
 	ERR err = WMP_errSuccess;
 
-	UNREFERENCED_PARAMETER( pIE);
-	UNREFERENCED_PARAMETER( pvParam);
-	UNREFERENCED_PARAMETER( cbParam);
+	UNREFERENCED_PARAMETER(pIE);
+	UNREFERENCED_PARAMETER(pvParam);
+	UNREFERENCED_PARAMETER(cbParam);
 
 	Call(WMP_errNotYetImplemented);
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageEncode_Release_WMP(PKImageEncode** ppIE) {
@@ -1446,17 +1538,17 @@ ERR PKImageEncode_Release_WMP(PKImageEncode** ppIE) {
 	PKImageEncode *pIE = *ppIE;
 	pIE->pStream->Close(&pIE->pStream);
 
-	PKFree((void **) &pIE->pbColorContext);
+	PKFree((void **)&pIE->pbColorContext);
 	pIE->cbColorContext = 0;
-	PKFree((void **) &pIE->pbXMPMetadata);
+	PKFree((void **)&pIE->pbXMPMetadata);
 	pIE->cbXMPMetadataByteCount = 0;
-	PKFree((void **) &pIE->pbEXIFMetadata);
+	PKFree((void **)&pIE->pbEXIFMetadata);
 	pIE->cbEXIFMetadataByteCount = 0;
-	PKFree((void **) &pIE->pbGPSInfoMetadata);
+	PKFree((void **)&pIE->pbGPSInfoMetadata);
 	pIE->cbGPSInfoMetadataByteCount = 0;
-	PKFree((void **) &pIE->pbIPTCNAAMetadata);
+	PKFree((void **)&pIE->pbIPTCNAAMetadata);
 	pIE->cbIPTCNAAMetadataByteCount = 0;
-	PKFree((void **) &pIE->pbPhotoshopMetadata);
+	PKFree((void **)&pIE->pbPhotoshopMetadata);
 	pIE->cbPhotoshopMetadataByteCount = 0;
 
 	// Free descriptive metadata
@@ -1475,9 +1567,9 @@ ERR PKImageEncode_Release_WMP(PKImageEncode** ppIE) {
 	FreeDescMetadata(&pIE->sDescMetadata.pvarPageNumber);
 	FreeDescMetadata(&pIE->sDescMetadata.pvarHostComputer);
 
-	Call(PKFree((void **) ppIE));
+	Call(PKFree((void **)ppIE));
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 //----------------------------------------------------------------
@@ -1492,18 +1584,18 @@ ERR PKImageEncode_Create_WMP(PKImageEncode** ppIE) {
 	pIE = *ppIE;
 	pIE->Initialize = PKImageEncode_Initialize_WMP;
 	pIE->Terminate = PKImageEncode_Terminate_WMP;
-// zx quoted out
-//	pIE->SetColorContext = PKImageEncode_SetColorContext_WMP;
-//	pIE->SetDescriptiveMetadata = PKImageEncode_SetDescriptiveMetadata_WMP;
+	// zx quoted out
+	pIE->SetColorContext = PKImageEncode_SetColorContext_WMP;
+	pIE->SetDescriptiveMetadata = PKImageEncode_SetDescriptiveMetadata_WMP;
 
 
-// zx added to separate tranform and coding for rate control
+	// zx added to separate tranform and coding for rate control
 	pIE->Transform = PKImageEncode_Transform_WMP;
 
 	pIE->WritePixels = PKImageEncode_WritePixels_WMP;
 
-//zx quoted out 
-/*
+	//zx quoted out 
+	
 	pIE->WritePixelsBandedBegin = PKImageEncode_WritePixelsBandedBegin_WMP;
 	pIE->WritePixelsBanded = PKImageEncode_WritePixelsBanded_WMP;
 	pIE->WritePixelsBandedEnd = PKImageEncode_WritePixelsBandedEnd_WMP;
@@ -1512,15 +1604,15 @@ ERR PKImageEncode_Create_WMP(PKImageEncode** ppIE) {
 	pIE->CreateNewFrame = PKImageEncode_CreateNewFrame_WMP;
 	pIE->Release = PKImageEncode_Release_WMP;
 	pIE->bWMP = TRUE;
-*/
-	Cleanup: return err;
+	
+Cleanup: return err;
 }
 
 //================================================================
 // PKImageDecode_WMP
 //================================================================
 ERR ParsePFDEntry(PKImageDecode* pID, U16 uTag, U16 uType, U32 uCount,
-		U32 uValue) {
+	U32 uValue) {
 	ERR err = WMP_errSuccess;
 	ERR errTmp = WMP_errSuccess;
 	PKPixelInfo PI;
@@ -1535,21 +1627,21 @@ ERR ParsePFDEntry(PKImageDecode* pID, U16 uTag, U16 uType, U32 uCount,
 	//================================
 	switch (uTag) {
 	case WMP_tagPixelFormat: {
-		unsigned char *pGuid = (unsigned char *) &pID->guidPixFormat;
-		/** following code is endian-agnostic **/
-		Call(GetULong(pWS, uValue, (U32 *)pGuid));
-		Call(GetUShort(pWS, uValue + 4, (unsigned short *)(pGuid + 4)));
-		Call(GetUShort(pWS, uValue + 6, (unsigned short *)(pGuid + 6)));
-		Call(pWS->Read(pWS, pGuid + 8, 8));
+								 unsigned char *pGuid = (unsigned char *)&pID->guidPixFormat;
+								 /** following code is endian-agnostic **/
+								 Call(GetULong(pWS, uValue, (U32 *)pGuid));
+								 Call(GetUShort(pWS, uValue + 4, (unsigned short *)(pGuid + 4)));
+								 Call(GetUShort(pWS, uValue + 6, (unsigned short *)(pGuid + 6)));
+								 Call(pWS->Read(pWS, pGuid + 8, 8));
 
-		PI.pGUIDPixFmt = &pID->guidPixFormat;
-		PixelFormatLookup(&PI, LOOKUP_FORWARD);
+								 PI.pGUIDPixFmt = &pID->guidPixFormat;
+								 PixelFormatLookup(&PI, LOOKUP_FORWARD);
 
-		pID->WMP.bHasAlpha = !!(PI.grBit & PK_pixfmtHasAlpha);
-		pID->WMP.wmiI.cBitsPerUnit = PI.cbitUnit;
-		pID->WMP.wmiI.bRGB = !(PI.grBit & PK_pixfmtBGR);
+								 pID->WMP.bHasAlpha = !!(PI.grBit & PK_pixfmtHasAlpha);
+								 pID->WMP.wmiI.cBitsPerUnit = PI.cbitUnit;
+								 pID->WMP.wmiI.bRGB = !(PI.grBit & PK_pixfmtBGR);
 
-		break;
+								 break;
 	}
 
 	case WMP_tagTransformation:
@@ -1612,13 +1704,13 @@ ERR ParsePFDEntry(PKImageDecode* pID, U16 uTag, U16 uType, U32 uCount,
 	case WMP_tagEXIFMetadata:
 		pID->WMP.wmiDEMisc.uEXIFMetadataOffset = uValue;
 		CallIgnoreError(errTmp,
-				StreamCalcIFDSize(pWS, uValue, &pID->WMP.wmiDEMisc.uEXIFMetadataByteCount));
+			StreamCalcIFDSize(pWS, uValue, &pID->WMP.wmiDEMisc.uEXIFMetadataByteCount));
 		break;
 
 	case WMP_tagGPSInfoMetadata:
 		pID->WMP.wmiDEMisc.uGPSInfoMetadataOffset = uValue;
 		CallIgnoreError(errTmp,
-				StreamCalcIFDSize(pWS, uValue, &pID->WMP.wmiDEMisc.uGPSInfoMetadataByteCount));
+			StreamCalcIFDSize(pWS, uValue, &pID->WMP.wmiDEMisc.uGPSInfoMetadataByteCount));
 		break;
 
 	case WMP_tagIPTCNAAMetadata:
@@ -1640,73 +1732,73 @@ ERR ParsePFDEntry(PKImageDecode* pID, U16 uTag, U16 uType, U32 uCount,
 		// Descriptive Metadata
 	case WMP_tagImageDescription:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarImageDescription));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarImageDescription));
 		assert(DPKVT_LPSTR == pID->WMP.sDescMetadata.pvarImageDescription.vt);
 		break;
 
 	case WMP_tagCameraMake:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarCameraMake));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarCameraMake));
 		assert(DPKVT_LPSTR == pID->WMP.sDescMetadata.pvarCameraMake.vt);
 		break;
 
 	case WMP_tagCameraModel:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarCameraModel));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarCameraModel));
 		assert(DPKVT_LPSTR == pID->WMP.sDescMetadata.pvarCameraModel.vt);
 		break;
 
 	case WMP_tagSoftware:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarSoftware));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarSoftware));
 		assert(DPKVT_LPSTR == pID->WMP.sDescMetadata.pvarSoftware.vt);
 		break;
 
 	case WMP_tagDateTime:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarDateTime));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarDateTime));
 		assert(DPKVT_LPSTR == pID->WMP.sDescMetadata.pvarDateTime.vt);
 		break;
 
 	case WMP_tagArtist:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarArtist));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarArtist));
 		assert(DPKVT_LPSTR == pID->WMP.sDescMetadata.pvarArtist.vt);
 		break;
 
 	case WMP_tagCopyright:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarCopyright));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarCopyright));
 		assert(DPKVT_LPSTR == pID->WMP.sDescMetadata.pvarCopyright.vt);
 		break;
 
 	case WMP_tagRatingStars:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarRatingStars));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarRatingStars));
 		assert(DPKVT_UI2 == pID->WMP.sDescMetadata.pvarRatingStars.vt);
 		break;
 
 	case WMP_tagRatingValue:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarRatingValue));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarRatingValue));
 		assert(DPKVT_UI2 == pID->WMP.sDescMetadata.pvarRatingValue.vt);
 		break;
 
 	case WMP_tagCaption:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarCaption));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarCaption));
 		assert(
-				(DPKVT_BYREF | DPKVT_UI1)
-						== pID->WMP.sDescMetadata.pvarCaption.vt);
+			(DPKVT_BYREF | DPKVT_UI1)
+			== pID->WMP.sDescMetadata.pvarCaption.vt);
 
 		// Change type from C-style byte array to LPWSTR
 		assert(
-				(U8*) pID->WMP.sDescMetadata.pvarCaption.VT.pwszVal
-						== pID->WMP.sDescMetadata.pvarCaption.VT.pbVal);
+			(U8*)pID->WMP.sDescMetadata.pvarCaption.VT.pwszVal
+			== pID->WMP.sDescMetadata.pvarCaption.VT.pbVal);
 		assert(
-				0
-						== pID->WMP.sDescMetadata.pvarCaption.VT.pwszVal[uCount
-								/ sizeof(U16) - 1]); // Confirm null-term
+			0
+			== pID->WMP.sDescMetadata.pvarCaption.VT.pwszVal[uCount
+			/ sizeof(U16)-1]); // Confirm null-term
 		//  make sure null term (ReadPropvar allocated enough space for this)
 		pID->WMP.sDescMetadata.pvarCaption.VT.pwszVal[uCount / sizeof(U16)] = 0;
 		pID->WMP.sDescMetadata.pvarCaption.vt = DPKVT_LPWSTR;
@@ -1714,36 +1806,36 @@ ERR ParsePFDEntry(PKImageDecode* pID, U16 uTag, U16 uType, U32 uCount,
 
 	case WMP_tagDocumentName:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarDocumentName));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarDocumentName));
 		assert(DPKVT_LPSTR == pID->WMP.sDescMetadata.pvarDocumentName.vt);
 		break;
 
 	case WMP_tagPageName:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarPageName));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarPageName));
 		assert(DPKVT_LPSTR == pID->WMP.sDescMetadata.pvarPageName.vt);
 		break;
 
 	case WMP_tagPageNumber:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarPageNumber));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarPageNumber));
 		assert(DPKVT_UI4 == pID->WMP.sDescMetadata.pvarPageNumber.vt);
 		break;
 
 	case WMP_tagHostComputer:
 		CallIgnoreError(errTmp,
-				ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarHostComputer));
+			ReadPropvar(pWS, uType, uCount, uValue, &pID->WMP.sDescMetadata.pvarHostComputer));
 		assert(DPKVT_LPSTR == pID->WMP.sDescMetadata.pvarHostComputer.vt);
 		break;
 
 	default:
 		fprintf(stderr, "Unrecognized WMPTag: %d(%#x), %d, %d, %#x" CRLF,
-				(int) uTag, (int) uTag, (int) uType, (int) uCount,
-				(int) uValue);
+			(int)uTag, (int)uTag, (int)uType, (int)uCount,
+			(int)uValue);
 		break;
 	}
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR ParsePFD(PKImageDecode* pID, size_t offPos, U16 cEntry) {
@@ -1770,10 +1862,10 @@ ERR ParsePFD(PKImageDecode* pID, size_t offPos, U16 cEntry) {
 	}
 
 	pID->WMP.bHasAlpha = ((pID->WMP.bHasAlpha)
-			&& (pID->WMP.wmiDEMisc.uAlphaOffset != 0)
-			&& (pID->WMP.wmiDEMisc.uAlphaByteCount != 0)); //has planar alpha
+		&& (pID->WMP.wmiDEMisc.uAlphaOffset != 0)
+		&& (pID->WMP.wmiDEMisc.uAlphaByteCount != 0)); //has planar alpha
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR ReadContainer(PKImageDecode* pID) {
@@ -1811,7 +1903,7 @@ ERR ReadContainer(PKImageDecode* pID) {
 
 	//================================
 	// PFD
-	offPos = (size_t) offPFD;
+	offPos = (size_t)offPFD;
 	Call(GetUShort(pWS, offPos, &cPFDEntry));
 	offPos += 2;
 	FailIf(0 == cPFDEntry || USHRT_MAX == cPFDEntry, WMP_errUnsupportedFormat);
@@ -1820,7 +1912,7 @@ ERR ReadContainer(PKImageDecode* pID) {
 	//================================
 	Call(pWS->SetPos(pWS, pID->WMP.wmiDEMisc.uImageOffset));
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 //================================================
@@ -1843,38 +1935,40 @@ ERR PKImageDecode_Initialize_WMP(PKImageDecode* pID, struct WMPStream* pWS) {
 	pID->WMP.fFirstNonZeroDecode = FALSE;
 
 	FailIf(ICERR_OK != ImageStrDecGetInfo(&pID->WMP.wmiI, &pID->WMP.wmiSCP),
-			WMP_errFail);
+		WMP_errFail);
 	assert(
-			Y_ONLY <= pID->WMP.wmiSCP.cfColorFormat
-					&& pID->WMP.wmiSCP.cfColorFormat < CFT_MAX);
+		Y_ONLY <= pID->WMP.wmiSCP.cfColorFormat
+		&& pID->WMP.wmiSCP.cfColorFormat < CFT_MAX);
 	assert(
-			BD_SHORT == pID->WMP.wmiSCP.bdBitDepth
-					|| BD_LONG == pID->WMP.wmiSCP.bdBitDepth);
+		BD_SHORT == pID->WMP.wmiSCP.bdBitDepth
+		|| BD_LONG == pID->WMP.wmiSCP.bdBitDepth);
 
 	// If HD Photo container provided an orientation, this should override bitstream orientation
 	// If container did NOT provide an orientation, force O_NONE. This is to be consistent with
 	// Vista behaviour, which is to ignore bitstream orientation (only looks at container).
 	if (pID->WMP.fOrientationFromContainer) {
 		pID->WMP.wmiI.oOrientation = pID->WMP.oOrientationFromContainer;
-	} else {
+	}
+	else {
 		// Force to O_NONE to match Vista decode behaviour
 		pID->WMP.wmiI.oOrientation = O_NONE;
 	}
 
 	pII = &pID->WMP.wmiI;
-	pID->uWidth = (U32) pII->cWidth;
-	pID->uHeight = (U32) pII->cHeight;
+	pID->uWidth = (U32)pII->cWidth;
+	pID->uHeight = (U32)pII->cHeight;
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageDecode_GetSize_WMP(PKImageDecode* pID, I32* piWidth, I32* piHeight) {
 	if (pID->WMP.wmiI.oOrientation >= O_RCW) {
-		*piWidth = (I32) pID->uHeight;
-		*piHeight = (I32) pID->uWidth;
-	} else {
-		*piWidth = (I32) pID->uWidth;
-		*piHeight = (I32) pID->uHeight;
+		*piWidth = (I32)pID->uHeight;
+		*piHeight = (I32)pID->uWidth;
+	}
+	else {
+		*piWidth = (I32)pID->uWidth;
+		*piHeight = (I32)pID->uHeight;
 	}
 	return WMP_errSuccess;
 }
@@ -1887,11 +1981,11 @@ ERR PKImageDecode_GetRawStream_WMP(PKImageDecode* pID, struct WMPStream** ppWS) 
 	Call(pWS->SetPos(pWS, pID->WMP.wmiDEMisc.uImageOffset));
 	*ppWS = pWS;
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageDecode_Copy_WMP(PKImageDecode* pID, const PKRect* pRect, U8* pb,
-		U32 cbStride) {
+	U32 cbStride) {
 	ERR err = WMP_errSuccess;
 	U32 cThumbnailScale;
 	U32 linesperMBRow;
@@ -1927,11 +2021,11 @@ ERR PKImageDecode_Copy_WMP(PKImageDecode* pID, const PKRect* pRect, U8* pb,
 	if (0 == pID->WMP.DecoderCurrMBRow) {
 #endif // REENTRANT_MODE
 		// Set the fPaddedUserBuffer if the following conditions are met
-		if (0 == ((size_t) pb % 128) && // Frame buffer is aligned to 128-byte boundary
-				0 == (pRect->Height % 16) && // Horizontal resolution is multiple of 16
-				0 == (pRect->Width % 16) && // Vertical resolution is multiple of 16
-				0 == (cbStride % 128)) // Stride is a multiple of 128 bytes
-						{
+		if (0 == ((size_t)pb % 128) && // Frame buffer is aligned to 128-byte boundary
+			0 == (pRect->Height % 16) && // Horizontal resolution is multiple of 16
+			0 == (pRect->Width % 16) && // Vertical resolution is multiple of 16
+			0 == (cbStride % 128)) // Stride is a multiple of 128 bytes
+		{
 			pID->WMP.wmiI.fPaddedUserBuffer = TRUE;
 			// Note that there are additional conditions in strdec_x86.c's strDecOpt
 			// which could prevent optimization from being engaged
@@ -1950,13 +2044,13 @@ ERR PKImageDecode_Copy_WMP(PKImageDecode* pID, const PKRect* pRect, U8* pb,
 #ifdef REENTRANT_MODE
 		if (0 == pID->WMP.DecoderCurrMBRow) {
 			Call(
-					pID->WMP.wmiSCP.pWStream->GetPos(pID->WMP.wmiSCP.pWStream, &(pID->WMP.cMarker)));
+				pID->WMP.wmiSCP.pWStream->GetPos(pID->WMP.wmiSCP.pWStream, &(pID->WMP.cMarker)));
 			FailIf(
-					ICERR_OK != ImageStrDecInit(&pID->WMP.wmiI, &pID->WMP.wmiSCP, &pID->WMP.ctxSC),
-					WMP_errFail);
+				ICERR_OK != ImageStrDecInit(&pID->WMP.wmiI, &pID->WMP.wmiSCP, &pID->WMP.ctxSC),
+				WMP_errFail);
 		}
-		cMBRow = ((U32) pID->WMP.wmiI.cROITopY + pRect->Y + pRect->Height
-				+ linesperMBRow - 1) / linesperMBRow + 1;
+		cMBRow = ((U32)pID->WMP.wmiI.cROITopY + pRect->Y + pRect->Height
+			+ linesperMBRow - 1) / linesperMBRow + 1;
 		cMBRowStart = pRect->Y / linesperMBRow + 1;
 		// if current request starts before current state, then rewind.
 		if (cMBRowStart < pID->WMP.DecoderCurrMBRow) {
@@ -1966,10 +2060,10 @@ ERR PKImageDecode_Copy_WMP(PKImageDecode* pID, const PKRect* pRect, U8* pb,
 			pID->WMP.fFirstNonZeroDecode = FALSE;
 			FailIf(ICERR_OK != ImageStrDecTerm(pID->WMP.ctxSC), WMP_errFail);
 			Call(
-					pID->WMP.wmiSCP.pWStream->SetPos(pID->WMP.wmiSCP.pWStream, pID->WMP.cMarker));
+				pID->WMP.wmiSCP.pWStream->SetPos(pID->WMP.wmiSCP.pWStream, pID->WMP.cMarker));
 			FailIf(
-					ICERR_OK != ImageStrDecInit(&pID->WMP.wmiI, &pID->WMP.wmiSCP, &pID->WMP.ctxSC),
-					WMP_errFail);
+				ICERR_OK != ImageStrDecInit(&pID->WMP.wmiI, &pID->WMP.wmiSCP, &pID->WMP.ctxSC),
+				WMP_errFail);
 		}
 
 		// In "Low Memory mode", we don't have full frame buffer. We therefore cannot rotate the image.
@@ -1980,23 +2074,24 @@ ERR PKImageDecode_Copy_WMP(PKImageDecode* pID, const PKRect* pRect, U8* pb,
 		// matter in O_NONE and O_FLIPH, but for O_FLIPV and O_FLIPVH, outputMBRow tries to write to
 		// the bottom of full-frame buffer. Adjust the buffer pointer to compensate.
 		if (O_FLIPV == pID->WMP.wmiI.oOrientation
-				|| O_FLIPVH == pID->WMP.wmiI.oOrientation) {
+			|| O_FLIPVH == pID->WMP.wmiI.oOrientation) {
 			I32 iActualY2 = pRect->Y + pRect->Height;
 			pbLowMemAdj = pb
-					- (pID->WMP.wmiI.cROIHeight
-							- (iActualY2 - pID->WMP.cLinesCropped)) * cbStride;
-		} else {
+				- (pID->WMP.wmiI.cROIHeight
+				- (iActualY2 - pID->WMP.cLinesCropped)) * cbStride;
+		}
+		else {
 			pbLowMemAdj = pb - (pRect->Y - pID->WMP.cLinesCropped) * cbStride;
 		}
 		wmiBI.pv = pbLowMemAdj;
 
-		for (i = (U32) pID->WMP.DecoderCurrMBRow; i < cMBRow; i++) {
+		for (i = (U32)pID->WMP.DecoderCurrMBRow; i < cMBRow; i++) {
 			size_t cLinesDecoded;
 			wmiBI.uiFirstMBRow = i;
 			wmiBI.uiLastMBRow = i;
 			FailIf(
-					ICERR_OK != ImageStrDecDecode(pID->WMP.ctxSC, &wmiBI, &cLinesDecoded),
-					WMP_errFail);
+				ICERR_OK != ImageStrDecDecode(pID->WMP.ctxSC, &wmiBI, &cLinesDecoded),
+				WMP_errFail);
 			pID->WMP.cLinesDecoded += cLinesDecoded;
 			if (FALSE == pID->WMP.fFirstNonZeroDecode && cLinesDecoded > 0) {
 				pID->WMP.cLinesCropped += (linesperMBRow - cLinesDecoded);
@@ -2026,33 +2121,33 @@ ERR PKImageDecode_Copy_WMP(PKImageDecode* pID, const PKRect* pRect, U8* pb,
 		}
 	}
 
-//    if(pID->WMP.bHasAlpha && pID->WMP.wmiSCP.uAlphaMode == 2)
-//    if(pID->WMP.bHasAlpha && pID->WMP.wmiSCP.uAlphaMode != 1)
+	//    if(pID->WMP.bHasAlpha && pID->WMP.wmiSCP.uAlphaMode == 2)
+	//    if(pID->WMP.bHasAlpha && pID->WMP.wmiSCP.uAlphaMode != 1)
 	if (pID->WMP.bHasAlpha && pID->WMP.wmiSCP.uAlphaMode != 0) {
 		pID->WMP.wmiI_Alpha = pID->WMP.wmiI;
 		pID->WMP.wmiSCP_Alpha = pID->WMP.wmiSCP;
 
-//        assert(pID->WMP.wmiI_Alpha.cfColorFormat == CF_RGB); // only RGBA is supported for now!
+		//        assert(pID->WMP.wmiI_Alpha.cfColorFormat == CF_RGB); // only RGBA is supported for now!
 		pID->WMP.wmiI_Alpha.cfColorFormat = Y_ONLY;
 
 		switch (pID->WMP.wmiI.bdBitDepth) {
 		case BD_8:
 			pID->WMP.wmiI_Alpha.cLeadingPadding += (pID->WMP.wmiI.cBitsPerUnit
-					>> 3) - 1;
+				>> 3) - 1;
 			break;
 
 		case BD_16:
 		case BD_16S:
 		case BD_16F:
 			pID->WMP.wmiI_Alpha.cLeadingPadding += (pID->WMP.wmiI.cBitsPerUnit
-					>> 3) / sizeof(U16) - 1;
+				>> 3) / sizeof(U16)-1;
 			break;
 
 		case BD_32:
 		case BD_32S:
 		case BD_32F:
 			pID->WMP.wmiI_Alpha.cLeadingPadding += (pID->WMP.wmiI.cBitsPerUnit
-					>> 3) / sizeof(float) - 1;
+				>> 3) / sizeof(float)-1;
 			break;
 
 		case BD_5:
@@ -2066,38 +2161,38 @@ ERR PKImageDecode_Copy_WMP(PKImageDecode* pID, const PKRect* pRect, U8* pb,
 		Call(pWS->SetPos(pWS, pID->WMP.wmiDEMisc.uAlphaOffset));
 #ifdef REENTRANT_MODE
 		if (0 == pID->WMP.DecoderCurrAlphaMBRow) // add this to WMP struct!
-				{
+		{
 			FailIf(
-					ICERR_OK != ImageStrDecInit(&pID->WMP.wmiI_Alpha, &pID->WMP.wmiSCP_Alpha, &pID->WMP.ctxSC_Alpha),
-					WMP_errFail);
+				ICERR_OK != ImageStrDecInit(&pID->WMP.wmiI_Alpha, &pID->WMP.wmiSCP_Alpha, &pID->WMP.ctxSC_Alpha),
+				WMP_errFail);
 		}
 
-		cMBRow = ((U32) pID->WMP.wmiI.cROITopY + pRect->Y + pRect->Height
-				+ linesperMBRow - 1) / linesperMBRow + 1;
+		cMBRow = ((U32)pID->WMP.wmiI.cROITopY + pRect->Y + pRect->Height
+			+ linesperMBRow - 1) / linesperMBRow + 1;
 		cMBRowStart = pRect->Y / linesperMBRow + 1;
 		// if current request starts before current state, then rewind.
 		if (cMBRowStart < pID->WMP.DecoderCurrAlphaMBRow) {
 			pID->WMP.DecoderCurrAlphaMBRow = 0;
 			FailIf(ICERR_OK != ImageStrDecTerm(pID->WMP.ctxSC_Alpha),
-					WMP_errFail);
+				WMP_errFail);
 			FailIf(
-					ICERR_OK != ImageStrDecInit(&pID->WMP.wmiI_Alpha, &pID->WMP.wmiSCP_Alpha, &pID->WMP.ctxSC_Alpha),
-					WMP_errFail);
+				ICERR_OK != ImageStrDecInit(&pID->WMP.wmiI_Alpha, &pID->WMP.wmiSCP_Alpha, &pID->WMP.ctxSC_Alpha),
+				WMP_errFail);
 		}
 
-		for (i = (U32) pID->WMP.DecoderCurrAlphaMBRow; i < cMBRow; i++) {
+		for (i = (U32)pID->WMP.DecoderCurrAlphaMBRow; i < cMBRow; i++) {
 			size_t cLinesDecoded;
 			wmiBI.uiFirstMBRow = i;
 			wmiBI.uiLastMBRow = i;
 			FailIf(
-					ICERR_OK != ImageStrDecDecode(pID->WMP.ctxSC_Alpha, &wmiBI, &cLinesDecoded),
-					WMP_errFail);
+				ICERR_OK != ImageStrDecDecode(pID->WMP.ctxSC_Alpha, &wmiBI, &cLinesDecoded),
+				WMP_errFail);
 		}
 
 		// If we're past the top of the image, then we're done, so terminate
 		if (linesperMBRow * (cMBRow - 1) >= pID->WMP.wmiI.cROIHeight) {
 			FailIf(ICERR_OK != ImageStrDecTerm(pID->WMP.ctxSC_Alpha),
-					WMP_errFail);
+				WMP_errFail);
 		}
 		pID->WMP.DecoderCurrAlphaMBRow = cMBRow; // Set to next possible MBRow that is decodable
 		wmiBI.pv = pb;
@@ -2110,11 +2205,11 @@ ERR PKImageDecode_Copy_WMP(PKImageDecode* pID, const PKRect* pRect, U8* pb,
 
 	pID->idxCurrentLine += pRect->Height;
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageDecode_GetMetadata_WMP(PKImageDecode *pID, U32 uOffset,
-		U32 uByteCount, U8 *pbGot, U32 *pcbGot) {
+	U32 uByteCount, U8 *pbGot, U32 *pcbGot) {
 	ERR err = WMP_errSuccess;
 
 	if (pbGot && uOffset) {
@@ -2128,24 +2223,24 @@ ERR PKImageDecode_GetMetadata_WMP(PKImageDecode *pID, U32 uOffset,
 		Call(pWS->SetPos(pWS, iCurrPos));
 	}
 
-	Cleanup: if (Failed(err))
-		*pcbGot = 0;
-	else
-		*pcbGot = uByteCount;
+Cleanup: if (Failed(err))
+	*pcbGot = 0;
+		 else
+			 *pcbGot = uByteCount;
 
-	return err;
+		 return err;
 }
 
 ERR PKImageDecode_GetColorContext_WMP(PKImageDecode *pID, U8 *pbColorContext,
-		U32 *pcbColorContext) {
+	U32 *pcbColorContext) {
 	return PKImageDecode_GetMetadata_WMP(pID,
-			pID->WMP.wmiDEMisc.uColorProfileOffset,
-			pID->WMP.wmiDEMisc.uColorProfileByteCount, pbColorContext,
-			pcbColorContext);
+		pID->WMP.wmiDEMisc.uColorProfileOffset,
+		pID->WMP.wmiDEMisc.uColorProfileByteCount, pbColorContext,
+		pcbColorContext);
 }
 
 ERR PKImageDecode_GetDescriptiveMetadata_WMP(PKImageDecode *pID,
-		DESCRIPTIVEMETADATA *pDescMetadata) {
+	DESCRIPTIVEMETADATA *pDescMetadata) {
 	ERR err = WMP_errSuccess;
 	*pDescMetadata = pID->WMP.sDescMetadata;
 	return err;
@@ -2179,7 +2274,7 @@ ERR PKImageDecode_Release_WMP(PKImageDecode** ppID) {
 	// Release base class
 	Call(PKImageDecode_Release(ppID));
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 
 ERR PKImageDecode_Create_WMP(PKImageDecode** ppID) {
@@ -2193,11 +2288,11 @@ ERR PKImageDecode_Create_WMP(PKImageDecode** ppID) {
 	pID->GetSize = PKImageDecode_GetSize_WMP;
 	pID->GetRawStream = PKImageDecode_GetRawStream_WMP;
 	pID->Copy = PKImageDecode_Copy_WMP;
-//zx 
-//	pID->GetColorContext = PKImageDecode_GetColorContext_WMP;
-//	pID->GetDescriptiveMetadata = PKImageDecode_GetDescriptiveMetadata_WMP;
+	//zx 
+	//	pID->GetColorContext = PKImageDecode_GetColorContext_WMP;
+	//	pID->GetDescriptiveMetadata = PKImageDecode_GetDescriptiveMetadata_WMP;
 	pID->Release = PKImageDecode_Release_WMP;
 
-	Cleanup: return err;
+Cleanup: return err;
 }
 

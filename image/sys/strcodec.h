@@ -321,6 +321,8 @@ typedef struct CWMImageStrCodec {
 	/** core parameters **/
 	CCoreParameters m_param;
 
+	int32_t * transformedImage; //YD added
+
 	struct CWMDecoderParameters *m_Dparam; // this is specified thru pointer because the same set of parameters may be used by multiple image planes
 
 	U8 cSB;
@@ -459,6 +461,7 @@ typedef struct CWMImageStrCodec {
 #endif // DISABLE_PERF_MEASUREMENT
 	// postproc information for 2 MB rows: 0(previous row) 1(current row)
 	struct tagPostProcInfo * pPostProcInfo[MAX_CHANNELS][2];
+	
 } CWMImageStrCodec;
 
 //================================================================
@@ -467,6 +470,7 @@ ERR WMPFree(void** ppv);
 
 //================================================================
 Void initMRPtr(CWMImageStrCodec*);
+
 Void advanceMRPtr(CWMImageStrCodec*);
 Void swapMRPtr(CWMImageStrCodec*);
 
