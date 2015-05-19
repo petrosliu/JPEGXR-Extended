@@ -48,7 +48,6 @@ FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream)
 	fp = pStream->state.file.pFile;
 
 	t = width*height;
-	
 	ma = 0;
 	mi = 0;
 	image = (float *)calloc(t, sizeof(float));
@@ -63,7 +62,7 @@ FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream)
 	quantStep = max/(pow(2,31)-1);
 		
 	imageOut = (int32_t *)malloc(t*sizeof(int32_t));
-
+	
 	for(i = 0; i<t; i++)
 	{
 		imageOut[i]	= (int32_t)(((float)image[i])/quantStep);
@@ -80,19 +79,11 @@ FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream)
 
 
 //================================================================
-const PKIID IID_PKImagePnmEncode = 102;
-const PKIID IID_PKImageBmpEncode = 103;
-const PKIID IID_PKImageTifEncode = 104;
-const PKIID IID_PKImageHdrEncode = 105;
 const PKIID IID_PKImageIyuvEncode = 106;
 const PKIID IID_PKImageYuv422Encode = 107;
 const PKIID IID_PKImageYuv444Encode = 108;
 const PKIID IID_PKImageRawEncode = 0; /* Rabih added: worthless */
 
-const PKIID IID_PKImageBmpDecode = 202;
-const PKIID IID_PKImagePnmDecode = 203;
-const PKIID IID_PKImageTifDecode = 204;
-const PKIID IID_PKImageHdrDecode = 205;
 const PKIID IID_PKImageIyuvDecode = 206;
 const PKIID IID_PKImageYuv422Decode = 207;
 const PKIID IID_PKImageYuv444Decode = 208;
@@ -152,19 +143,14 @@ static ERR GetTestInfo(const char* szExt, const PKIIDInfo** ppInfo) {
 	ERR err = WMP_errSuccess;
 /* Rabih edit: add .raw and NULL to this group and we will be solid. */
 
-	static PKIIDInfo iidInfo[] = { { ".bmp", &IID_PKImageBmpEncode,
-			&IID_PKImageBmpDecode }, { ".ppm", &IID_PKImagePnmEncode,
-			&IID_PKImagePnmDecode }, { ".pgm", &IID_PKImagePnmEncode,
-			&IID_PKImagePnmDecode }, { ".pnm", &IID_PKImagePnmEncode,
-			&IID_PKImagePnmDecode }, { ".pfm", &IID_PKImagePnmEncode,
-			&IID_PKImagePnmDecode }, { ".tif", &IID_PKImageTifEncode,
-			&IID_PKImageTifDecode }, { ".hdr", &IID_PKImageHdrEncode,
-			&IID_PKImageHdrDecode }, { ".iyuv", &IID_PKImageIyuvEncode,
-			&IID_PKImageIyuvDecode }, { ".yuv422", &IID_PKImageYuv422Encode,
-			&IID_PKImageYuv422Decode }, { ".yuv444", &IID_PKImageYuv444Encode,
-			&IID_PKImageYuv444Decode }, 
-			{".raw", &IID_PKImageTifEncode, &IID_PKImageRawDecode}, /* Rabih added */
-			{NULL, &IID_PKImageTifEncode, &IID_PKImageRawDecode}, /* Rabih added */
+	static PKIIDInfo iidInfo[] = { 
+/*
+                       { ".iyuv", &IID_PKImageIyuvEncode, &IID_PKImageIyuvDecode }, 
+                       { ".yuv422", &IID_PKImageYuv422Encode, &IID_PKImageYuv422Decode }, 
+                       { ".yuv444", &IID_PKImageYuv444Encode, &IID_PKImageYuv444Decode }, 
+*/
+			{".raw", &IID_PKImageRawEncode, &IID_PKImageRawDecode}, /* Rabih added */
+			{NULL, &IID_PKImageRawEncode, &IID_PKImageRawDecode}, /* Rabih added */
 			};
 	size_t i = 0;
 
@@ -181,7 +167,7 @@ static ERR GetTestInfo(const char* szExt, const PKIIDInfo** ppInfo) {
 	}
 	else
 	{
-		*ppInfo = &iidInfo[11]; /*rabih added if else blocks for this*/
+		*ppInfo = &iidInfo[1]; /*rabih added if else blocks for this, zx refer to ".raw" above */
 		goto Cleanup;
 	}
 	Call(WMP_errUnsupportedFormat);
@@ -218,15 +204,11 @@ ERR PKTestFactory_CreateCodec(const PKIID* iid, void** ppv, ARGInputs* pMyArgs) 
 	ERR err = WMP_errSuccess;
 	PKTestDecode** ppMyppV = (PKTestDecode**)ppv;
 
-	if (IID_PKImageBmpEncode == *iid) {
-		Call(PKImageEncode_Create_BMP((PKImageEncode**)ppv));
-	} else if (IID_PKImagePnmEncode == *iid) {
-		Call(PKImageEncode_Create_PNM((PKImageEncode**)ppv));
-	} else if (IID_PKImageTifEncode == *iid) {
-		Call(PKImageEncode_Create_TIF((PKImageEncode**)ppv));
-	} else if (IID_PKImageHdrEncode == *iid) {
-		Call(PKImageEncode_Create_HDR((PKImageEncode**)ppv));
-	} else if (IID_PKImageIyuvEncode == *iid) {
+        if (IID_PKImageRawEncode == *iid) {
+		Call(PKImageEncode_Create_RAW((PKImageEncode**)ppv));
+	} 
+/*
+        else if (IID_PKImageIyuvEncode == *iid) {
 		Call(PKImageEncode_Create_IYUV((PKImageEncode**)ppv));
 	} else if (IID_PKImageYuv422Encode == *iid) {
 		Call(PKImageEncode_Create_YUV422((PKImageEncode**)ppv));
@@ -234,31 +216,21 @@ ERR PKTestFactory_CreateCodec(const PKIID* iid, void** ppv, ARGInputs* pMyArgs) 
 		Call(PKImageEncode_Create_YUV444((PKImageEncode**)ppv));
 	}
 
-	else if (IID_PKImageBmpDecode == *iid) {
-		Call(PKImageDecode_Create_BMP((PKTestDecode**)ppv));
-	} else if (IID_PKImagePnmDecode == *iid) {
-		Call(PKImageDecode_Create_PNM((PKTestDecode**)ppv));
-	} else if (IID_PKImageTifDecode == *iid) {
-		Call(PKImageDecode_Create_TIF((PKTestDecode**)ppv));
-	} else if (IID_PKImageHdrDecode == *iid) {
-		Call(PKImageDecode_Create_HDR((PKTestDecode**)ppv));
-	} else if (IID_PKImageIyuvDecode == *iid) {
+	else if (IID_PKImageIyuvDecode == *iid) {
 		Call(PKImageDecode_Create_IYUV((PKTestDecode**)ppv));
 	} else if (IID_PKImageYuv422Decode == *iid) {
 		Call(PKImageDecode_Create_YUV422((PKTestDecode**)ppv));
 	} else if (IID_PKImageYuv444Decode == *iid) {
 		Call(PKImageDecode_Create_YUV444((PKTestDecode**)ppv));
 	}
-
+*/
 	else if (IID_PKImageRawDecode == *iid) {
 	/*rabih: this whole area is new*/
 		Call(PKTestDecode_Create(ppMyppV));
 		PKTestDecode_AppendARGS(ppMyppV,pMyArgs);
 		Call(PKImageDecode_Create_RAW((ppMyppV))); /* Rabih edit: custom raw decode from input...*/
 
-	} else if (IID_PKImageRawEncode == *iid){
-	/*This one is a dummy and should never be accessed so long as we stick with the hacked decode...*/
-	}
+	} 
 
 	else {
 		Call(WMP_errUnsupportedFormat);
