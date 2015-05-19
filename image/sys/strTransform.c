@@ -1,14 +1,14 @@
 //*@@@+++@@@@******************************************************************
 //
-// Copyright © Microsoft Corp.
+// Copyright ï¿½ Microsoft Corp.
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 
-// • Redistributions of source code must retain the above copyright notice,
+// ï¿½ Redistributions of source code must retain the above copyright notice,
 //   this list of conditions and the following disclaimer.
-// • Redistributions in binary form must reproduce the above copyright notice,
+// ï¿½ Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // 
@@ -30,56 +30,53 @@
 
 /** need to swap b and c **/
 /** rounding behavior: [0 0 0 0] <-> [+ - - -]
-    [+ + + +] <-> [+3/4 - - -]
-    [- - - -] <-> [- - - -] **/
-Void strDCT2x2dn(PixelI *pa, PixelI *pb, PixelI *pc, PixelI *pd)
-{
-    PixelI a, b, c, d, C, t;
-    a = *pa;
-    b = *pb;
-    C = *pc;
-    d = *pd;
-  
-    a += d;
-    b -= C;
-    t = ((a - b) >> 1);
-    c = t - d;
-    d = t - C;
-    a -= d;
-    b += c;
+ [+ + + +] <-> [+3/4 - - -]
+ [- - - -] <-> [- - - -] **/
+Void strDCT2x2dn(PixelI *pa, PixelI *pb, PixelI *pc, PixelI *pd) {
+	PixelI a, b, c, d, C, t;
+	a = *pa;
+	b = *pb;
+	C = *pc;
+	d = *pd;
 
-    *pa = a;
-    *pb = b;
-    *pc = c;
-    *pd = d;
+	a += d;
+	b -= C;
+	t = ((a - b) >> 1);
+	c = t - d;
+	d = t - C;
+	a -= d;
+	b += c;
+
+	*pa = a;
+	*pb = b;
+	*pc = c;
+	*pd = d;
 }
 
-Void strDCT2x2up(PixelI *pa, PixelI *pb, PixelI *pc, PixelI *pd)
-{
-    PixelI a, b, c, d, C, t;
-    a = *pa;
-    b = *pb;
-    C = *pc;
-    d = *pd;
-  
-    a += d;
-    b -= C;
-    t = ((a - b + 1) >> 1);
-    c = t - d;
-    d = t - C;
-    a -= d;
-    b += c;
+Void strDCT2x2up(PixelI *pa, PixelI *pb, PixelI *pc, PixelI *pd) {
+	PixelI a, b, c, d, C, t;
+	a = *pa;
+	b = *pb;
+	C = *pc;
+	d = *pd;
 
-    *pa = a;
-    *pb = b;
-    *pc = c;
-    *pd = d;
+	a += d;
+	b -= C;
+	t = ((a - b + 1) >> 1);
+	c = t - d;
+	d = t - C;
+	a -= d;
+	b += c;
+
+	*pa = a;
+	*pb = b;
+	*pc = c;
+	*pd = d;
 }
 
-Void FOURBUTTERFLY_HARDCODED1(PixelI *p)
-{
-    strDCT2x2dn(&p[0], &p[4], &p[8], &p[12]);
-    strDCT2x2dn(&p[1], &p[5], &p[9], &p[13]);
-    strDCT2x2dn(&p[2], &p[6], &p[10], &p[14]);
-    strDCT2x2dn(&p[3], &p[7], &p[11], &p[15]);
+Void FOURBUTTERFLY_HARDCODED1(PixelI *p) {
+	strDCT2x2dn(&p[0], &p[4], &p[8], &p[12]);
+	strDCT2x2dn(&p[1], &p[5], &p[9], &p[13]);
+	strDCT2x2dn(&p[2], &p[6], &p[10], &p[14]);
+	strDCT2x2dn(&p[3], &p[7], &p[11], &p[15]);
 }

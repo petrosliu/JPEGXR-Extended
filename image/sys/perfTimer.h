@@ -1,14 +1,14 @@
 //*@@@+++@@@@******************************************************************
 //
-// Copyright © Microsoft Corp.
+// Copyright ï¿½ Microsoft Corp.
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 
-// • Redistributions of source code must retain the above copyright notice,
+// ï¿½ Redistributions of source code must retain the above copyright notice,
 //   this list of conditions and the following disclaimer.
-// • Redistributions in binary form must reproduce the above copyright notice,
+// ï¿½ Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // 
@@ -52,7 +52,6 @@
 #define PERFTIMER_REPORT(fPerf, pCodec)
 
 #else // DISABLE_PERF_MEASUREMENT
-
 #define PERFTIMER_ONLY(code) code
 #define PERFTIMER_NEW(fPerf, ppPerfTimer)    if (fPerf) {Bool b = b = PerfTimerNew(ppPerfTimer); assert(b);};
 #define PERFTIMER_DELETE(fPerf, pPerfTimer)  if (fPerf) {PerfTimerDelete(pPerfTimer);};
@@ -65,40 +64,32 @@
 #define PERFTIMER_REPORT(fPerf, pCodec) \
     if (fPerf) {OutputPerfTimerReport(pCodec);};
 #endif // DISABLE_PERF_MEASUREMENT
-
 //***************************************************************************
 // Data Types
 //***************************************************************************
 typedef U64 PERFTIMERTIME;
-typedef struct PERFTIMERRESULTS
-{
-    PERFTIMERTIME   iElapsedTime;       // In nanoseconds or CPU cycles
-    PERFTIMERTIME   iTicksPerSecond;    // Number of ticks per second (clock frequency)
-    PERFTIMERTIME   iZeroTimeIntervals; // Number of zero-time intervals.
-        // Presence of zero-time intervals may indicate insufficient clock precision
+typedef struct PERFTIMERRESULTS {
+	PERFTIMERTIME iElapsedTime; // In nanoseconds or CPU cycles
+	PERFTIMERTIME iTicksPerSecond; // Number of ticks per second (clock frequency)
+	PERFTIMERTIME iZeroTimeIntervals; // Number of zero-time intervals.
+// Presence of zero-time intervals may indicate insufficient clock precision
 } PERFTIMERRESULTS;
 
 #define NANOSECONDS_PER_SECOND  1000000000
 
-
 //***************************************************************************
 // Data Declarations
 //***************************************************************************
-typedef enum
-{
-    CS_UNINIT,
-    CS_RUNNING,
-    CS_STOPPED,
+typedef enum {
+	CS_UNINIT, CS_RUNNING, CS_STOPPED,
 } CLOCKSTATE;
 
-typedef struct PERFTIMERSTATE
-{
-    CLOCKSTATE          eState;
-    PERFTIMERTIME       iElapsedTime;
-    PERFTIMERTIME       iPrevStartTime;
-    PERFTIMERTIME       iZeroTimeIntervals;
+typedef struct PERFTIMERSTATE {
+	CLOCKSTATE eState;
+	PERFTIMERTIME iElapsedTime;
+	PERFTIMERTIME iPrevStartTime;
+	PERFTIMERTIME iZeroTimeIntervals;
 } PERFTIMERSTATE;
-
 
 //***************************************************************************
 // Functions and Macros
@@ -108,8 +99,8 @@ void PerfTimerDelete(PERFTIMERSTATE *pThisPerfTimer);
 Bool PerfTimerStart(PERFTIMERSTATE *pThisPerfTimer);
 Bool PerfTimerStop(PERFTIMERSTATE *pThisPerfTimer);
 Bool PerfTimerGetResults(PERFTIMERSTATE *pThisPerfTimer,
-                         PERFTIMERRESULTS *pPerfTimerResults);
+		PERFTIMERRESULTS *pPerfTimerResults);
 Bool PerfTimerCopyStartTime(PERFTIMERSTATE *pDestPerfTimer,
-                            PERFTIMERSTATE *pSrcPerfTimer);
+		PERFTIMERSTATE *pSrcPerfTimer);
 
 #endif // __PERFTIMER_H_

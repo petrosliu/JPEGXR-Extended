@@ -1,14 +1,14 @@
 //*@@@+++@@@@******************************************************************
 //
-// Copyright © Microsoft Corp.
+// Copyright ï¿½ Microsoft Corp.
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 
-// • Redistributions of source code must retain the above copyright notice,
+// ï¿½ Redistributions of source code must retain the above copyright notice,
 //   this list of conditions and the following disclaimer.
-// • Redistributions in binary form must reproduce the above copyright notice,
+// ï¿½ Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // 
@@ -32,8 +32,8 @@
 #include "strcodec.h"
 
 /*************************************************************************
-    struct / class definitions
-*************************************************************************/
+ struct / class definitions
+ *************************************************************************/
 
 Int EncodeMacroblockDC(CWMImageStrCodec*, CCodingContext *, Int, Int);
 Int EncodeMacroblockLowpass(CWMImageStrCodec*, CCodingContext *, Int, Int);
@@ -46,13 +46,14 @@ Void predMacroblockEnc(CWMImageStrCodec *);
 Void AdaptLowpassEnc(CCodingContext *pContext);
 Void AdaptHighpassEnc(CCodingContext *pContext);
 Void ResetCodingContextEnc(CCodingContext *pContext);
-Int  AllocateCodingContextEnc(struct CWMImageStrCodec *pSC, Int iNumContexts, Int iTrimFlexBits);
+Int AllocateCodingContextEnc(struct CWMImageStrCodec *pSC, Int iNumContexts,
+		Int iTrimFlexBits);
 Void FreeCodingContextEnc(struct CWMImageStrCodec *pSC);
 Void predCBPEnc(CWMImageStrCodec *pSC, CCodingContext *pContext);
 
 /*************************************************************************
-    Forward transform definitions
-*************************************************************************/
+ Forward transform definitions
+ *************************************************************************/
 /** 2-point pre filter for boundaries (only used in 420 UV DC subband) **/
 Void strPre2(PixelI *, PixelI *);
 
@@ -108,6 +109,5 @@ Void strDCT2x2dnEnc(PixelI *, PixelI *, PixelI *, PixelI *);
 
 /** 4x4 pre filter for second stage **/
 Void strPre4x4Stage2Split(PixelI* p0, PixelI* p1);
-    
-#endif // ENCODE_H
 
+#endif // ENCODE_H

@@ -613,6 +613,11 @@ Void outputNChannel(CWMImageStrCodec * pSC, size_t iFirstRow, size_t iFirstColum
     const U8 nLen = pSC->WMISCP.nLenMantissaOrShift;
     const I8 nExpBias = pSC->WMISCP.nExpBias;
 
+// zx addition
+  int magic_num = 1 << (31 - (nLen - iShift));
+  int zx_hig = magic_num -1 - iBias;
+  int zx_low = -1 * magic_num;
+
     PixelI * pChannel[16];
     size_t iChannel, iRow, iColumn;
     size_t * pOffsetX = pSC->m_Dparam->pOffsetX, * pOffsetY = pSC->m_Dparam->pOffsetY + (pSC->cRow - 1) * 16, iY;
@@ -706,6 +711,8 @@ Void outputNChannel(CWMImageStrCodec * pSC, size_t iFirstRow, size_t iFirstColum
 
                     for(iChannel = 0; iChannel < cChannel; iChannel ++){
                         PixelI p = ((pChannel[iChannel & 15][((iColumn >> 4) << 8) + idxCC[iRow][iColumn & 0xf]] + iBias) >> iShift);
+// zx
+if (p < zx_low) p = zx_low; if (p > zx_hig) p = zx_hig;
 
                         p <<= nLen;
                         pDst[iChannel] = (I32)(p);
@@ -3393,6 +3400,10 @@ Int ImageStrDecInit(
     *pSCP = pSC->WMISCP;
     *pctxSC = (CTXSTRCODEC)pSC;
 
+    // original image size
+    pII->cROILeftX += SC.m_param.cExtraPixelsLeft;
+    pII->cROITopY += SC.m_param.cExtraPixelsTop;
+
     if(pSC->WMII.cPostProcStrength){
         initPostProc(pSC->pPostProcInfo, pSC->cmbWidth, pSC->m_param.cNumChannels);
         if (pSC->m_param.bAlphaChannel) 
@@ -3560,10 +3571,8 @@ Int ImageStrDecDecode(
 
         if (pSC->cRow) {
             if(pSC->m_Dparam->cThumbnailScale < 2 && (pSC->m_Dparam->bDecodeFullFrame || 
-                ((pSC->cRow * 16 > pSC->m_Dparam->cROITopY) && (pSC->cRow * 16 <= pSC->m_Dparam->cROIBottomY + 16)))) {
-                if( pSC->Load(pSC) != ICERR_OK ) // bypass CC for thumbnail decode
-            		return ICERR_ERROR;
-            }
+                ((pSC->cRow * 16 > pSC->m_Dparam->cROITopY) && (pSC->cRow * 16 <= pSC->m_Dparam->cROIBottomY + 16))))
+                pSC->Load(pSC); // bypass CC for thumbnail decode
 
             if(pSC->m_Dparam->cThumbnailScale >= 2) // decode thumbnail
                 decodeThumbnail(pSC);

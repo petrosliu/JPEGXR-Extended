@@ -1,14 +1,14 @@
 //*@@@+++@@@@******************************************************************
 //
-// Copyright © Microsoft Corp.
+// Copyright ï¿½ Microsoft Corp.
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 
-// • Redistributions of source code must retain the above copyright notice,
+// ï¿½ Redistributions of source code must retain the above copyright notice,
 //   this list of conditions and the following disclaimer.
-// • Redistributions in binary form must reproduce the above copyright notice,
+// ï¿½ Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // 
@@ -32,8 +32,8 @@
 #if (!defined UNDER_CE && !defined NO_WINDOWS && !defined SPECSTRINGS_H)
 #define SPECSTRINGS_H
 /*************************************************************************
-* See specstrings_strict.h for documentation of all user visible macros.
-*************************************************************************/
+ * See specstrings_strict.h for documentation of all user visible macros.
+ *************************************************************************/
 #if _MSC_VER
 #pragma once
 #endif
@@ -47,10 +47,10 @@
 extern "C" {
 #endif 
 
-/* version specific fixes to bring sal.h upto date */
+	/* version specific fixes to bring sal.h upto date */
 #if __SAL_H_FULL_VER <= 140050727
 
-/* Missing from RTM sal.h */
+	/* Missing from RTM sal.h */
 #if !defined(__midl) && defined(_PREFAST_) && _MSC_VER >= 1000
 
 #define __inexpressible_readableTo(size)  __declspec("SAL_readableTo(inexpressibleCount('" SPECSTRINGIZE(size) "'))")
@@ -143,7 +143,7 @@ extern "C" {
 #define __deref_opt_inout_xcount_opt(size)                      __deref_inout_xcount_opt(size)              __exceptthat __maybenull
 #define __deref_opt_inout_xcount_part_opt(size,length)          __deref_inout_xcount_part_opt(size,length)  __exceptthat __maybenull
 #define __deref_opt_inout_xcount_full_opt(size)                 __deref_inout_xcount_full_opt(size)         __exceptthat __maybenull
-/* Must protect redfinitions of macros to workaround rc.exe issues. */
+	/* Must protect redfinitions of macros to workaround rc.exe issues. */
 #ifndef RC_INVOKED
 #undef __nullnullterminated
 #define __nullnullterminated __xcount("string terminated by two nulls")
@@ -151,10 +151,9 @@ extern "C" {
 #define __checkReturn __post __inner_checkReturn
 #endif
 #endif  //__SAL_H_FULL_VER <= 140050727
-
-/************************************************************************
- New extensions to sal.h follow here.
-*************************************************************************/
+	/************************************************************************
+	 New extensions to sal.h follow here.
+	 *************************************************************************/
 
 #if (_MSC_VER >= 1000) && !defined(__midl) && defined(_PREFAST_)
 #define __file_parser(typ)                  __declspec("SAL_file_parser(function, " #typ ")")    
@@ -164,7 +163,7 @@ extern "C" {
 #define __class_code_content(typ)           __declspec("SAL_class_code_content(" #typ ")")
 #define __analysis_assert(e)                __assume(e)
 #define __analysis_hint(hint)               __declspec("SAL_analysisHint(" #hint ")")   
-/* Internal defintions */
+	/* Internal defintions */
 #define __inner_data_source(src_raw)        __declspec("SAL_untrusted_data_source(" src_raw ")")
 #define __inner_this_data_source(src_raw)   __declspec("SAL_untrusted_data_source_this(" src_raw ")")
 #define __inner_out_validated(typ_raw)      __declspec("SAL_post") __declspec("SAL_validated(" typ_raw ")") 
@@ -190,7 +189,7 @@ extern "C" {
 #define __class_code_content(typ)
 #define __analysis_assert(e)
 #define __analysis_hint(hint)
-/* Internal defintions */
+	/* Internal defintions */
 #define __inner_data_source(src_raw)
 #define __inner_this_data_source(src_raw)
 #define __inner_out_validated(typ_raw)
@@ -208,7 +207,6 @@ extern "C" {
 #define __$nonvolatile 
 #define __$possibly_notnulltermiated 
 #endif // #if (_MSC_VER >= 1000) && !defined(__midl) && defined(_PREFAST_)
-
 #define __field_ecount(size)                __notnull __elem_writableTo(size)
 #define __field_bcount(size)                __notnull __byte_writableTo(size)
 #define __field_xcount(size)                __notnull __inexpressible_writableTo(size)
@@ -247,7 +245,7 @@ extern "C" {
 				            __byte_readableTo((expr) ? (size) : (size) * 2)
 #endif
 
-/* integer related macros */
+	/* integer related macros */
 #define __allocator                         __inner_allocator
 #define __bound                             __inner_bound
 #define __range(lb,ub)                      __inner_range(lb,ub)
@@ -261,7 +259,7 @@ extern "C" {
 #define __field_range(lb,ub)                __range(lb,ub)
 #define __field_data_source(src_sym)        __inner_data_source(#src_sym)
 
-/* Pentraion review macros */
+	/* Pentraion review macros */
 #define __in_data_source(src_sym)           __pre __inner_data_source(#src_sym)
 #define __out_data_source(src_sym)          __post __inner_data_source(#src_sym)
 #define __out_validated(typ_sym)            __inner_out_validated(#typ_sym)
@@ -281,20 +279,20 @@ extern "C" {
 #define __out_transfer_adt_prop(arg)        __post __$adt_transfer_prop(arg)
 #define __out_has_type_adt_props(typ)       __post __$adt_type_props(typ)
 
-/* useful PFD related macros */
+	/* useful PFD related macros */
 #define __possibly_notnulltermiated         __post __$possibly_notnulltermiated
 
 #if defined(_WINDOWS_)
-/* Windows Internal */
+	/* Windows Internal */
 #define __volatile                          __$volatile
 #define __nonvolatile                       __$nonvolatile
 #define __deref_volatile                    __deref __volatile
 #define __deref_nonvolatile                 __deref __nonvolatile
 #endif
 
-/* declare stub functions for macros */
-__inner_assume_validated_dec 
-__inner_assume_bound_dec 
+	/* declare stub functions for macros */
+	__inner_assume_validated_dec
+	__inner_assume_bound_dec
 
 #define __assume_validated(p) __inner_assume_validated(p)
 #define __assume_bound(i) __inner_assume_bound(i)
@@ -304,9 +302,9 @@ __inner_assume_bound_dec
 #include <wmspecstrings_adt.h>
 #ifdef _PREFIX_
 /**************************************************************************
-* Defintion of __pfx_assume and __pfx_assert. Thse should be the only
-* defintions of these functions.  
-***************************************************************************/
+ * Defintion of __pfx_assume and __pfx_assert. Thse should be the only
+ * defintions of these functions.  
+ ***************************************************************************/
 #if __cplusplus
 extern "C" void __pfx_assert(bool, const char *);
 extern "C" void __pfx_assume(bool, const char *);
@@ -315,8 +313,8 @@ void __pfx_assert(int, const char *);
 void __pfx_assume(int, const char *);
 #endif
 /**************************************************************************
-* Redefintion of __analysis_assume and __analysis_assert for PREFIX build
-**************************************************************************/
+ * Redefintion of __analysis_assume and __analysis_assert for PREFIX build
+ **************************************************************************/
 #undef  __analysis_assume
 #undef  __analysis_assert
 #define __analysis_assume(e) (__pfx_assume(e,"pfx_assume"),__assume(e));
@@ -324,9 +322,9 @@ void __pfx_assume(int, const char *);
 #endif /* ifdef _PREFIX_ */
 
 /**************************************************************************
-* This include should always be the last thing in this file. 
-* Must avoid redfinitions of macros to workaround rc.exe issues. 
-***************************************************************************/
+ * This include should always be the last thing in this file. 
+ * Must avoid redfinitions of macros to workaround rc.exe issues. 
+ ***************************************************************************/
 #if !(defined(RC_INVOKED) || defined(SORTPP_PASS))
 #include <wmspecstrings_strict.h>
 #endif /* if !(defined(RC_INVOKED) || defined(SORTPP_PASS)) */
@@ -335,8 +333,7 @@ void __pfx_assume(int, const char *);
 // Some CE versions don't have specstrings.h, some have very old version without
 // __specstrings defined. So we handle CE separately in wmasalce.h
 #if defined(UNDER_CE) || defined(NO_WINDOWS)
-  #include "wmspecstringce.h"
+#include "wmspecstringce.h"
 #endif
 
 #endif //_WMSPECSTRING_H_
-

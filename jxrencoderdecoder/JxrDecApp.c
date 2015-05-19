@@ -1,14 +1,14 @@
 //*@@@+++@@@@******************************************************************
 //
-// Copyright © Microsoft Corp.
+// Copyright ï¿½ Microsoft Corp.
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 
-// • Redistributions of source code must retain the above copyright notice,
+// ï¿½ Redistributions of source code must retain the above copyright notice,
 //   this list of conditions and the following disclaimer.
-// • Redistributions in binary form must reproduce the above copyright notice,
+// ï¿½ Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // 
@@ -60,7 +60,7 @@ typedef struct tagWMPDECAPPARGS
     // post processing
     U8 cPostProcStrength;
 
-    U8 uAlphaMode; // 0:no alpha 1: alpha only else: something + alpha 
+    U8 uAlphaMode; // 0:no alpha 1: alpha only else: something + alpha
 
     SUBBAND sbSubband;  // which subbands to keep (for transcoding)
 
@@ -71,12 +71,68 @@ typedef struct tagWMPDECAPPARGS
     Bool bIgnoreOverlap;
 } WMPDECAPPARGS;
 
+typedef struct /*rabih added*/
+{
+	int hei;
+	int wid;
+	
+	char* inputFileF;
+	//char* outputFileSB;
+
+	Bool flag;
+	double scale;
+} sbVar; //scaleback variable
+
+void initSBVar (sbVar* pSBVar) /*rabih added*/
+{
+	memset(pSBVar, 0, sizeof(*pSBVar));
+	pSBVar->hei = 0;
+	pSBVar->wid = 0;
+	pSBVar->flag = FALSE;
+	pSBVar->inputFileF = "out.tif"; //need to have this as the final output...
+	//pSBVar->outputFileSB = "out.float"; //this should be an intermediary
+}
+
+void scaleback(sbVar * pSBVar)
+{
+	int i, w, h, t, b; 
+	double scale;
+	FILE    *in_file1, *in_file2;
+	int32_t *image1;
+	float *image2;
+	
+	in_file1=fopen(pSBVar->inputFileF,"r");
+	//in_file2=fopen(pSBVar->outputFileSB,"w");
+	w=pSBVar->wid;
+	h=pSBVar->hei;
+	scale=pSBVar->scale;
+	t=w*h;
+	
+	image1=(int32_t *)calloc(t, sizeof(int32_t));
+	image2=(float *)malloc(t*sizeof(float));
+	
+	fread(image1,sizeof(int32_t),w*h,in_file1);
+	fclose(in_file1);
+	
+	for(i=0;i<t;i++)
+		image2[i]=scale*((float)image1[i]);
+	
+	in_file2=fopen(pSBVar->inputFileF,"w+");
+	fwrite(image2,sizeof(float),w*h,in_file2);
+	fclose(in_file2);
+
+	/*
+	for(i=0;i<t;i++) printf("%g %d %f\n", scale, image1[i],image2[i]);
+	*/
+
+}
+
 //----------------------------------------------------------------
 void WmpDecAppUsage(const char* szExe)
 {
     printf(CRLF);
     printf("JPEG XR Decoder Utility" CRLF);
-    printf("Copyright 2013 Microsoft Corporation - All Rights Reserved" CRLF); 
+    printf("Copyright 2013 Microsoft Corporation - All Rights Reserved" CRLF);
     printf(CRLF);
     printf("%s [options]..." CRLF, szExe);
     printf(CRLF);
@@ -161,11 +217,11 @@ void WmpDecAppUsage(const char* szExe)
     printf("                               7: Rotate 90 degrees CW & flip vert & horiz" CRLF);
     printf(CRLF);
 
-    printf("  -s skip subbands             Used for compressed domain transcoding" CRLF);    
-    printf("                               0: All subbands included (default)" CRLF);    
-    printf("                               1: Skip flexbits" CRLF);    
-    printf("                               2: Skip highpass" CRLF);    
-    printf("                               3: Skip highpass & lowpass (DC only)" CRLF);    
+    printf("  -s skip subbands             Used for compressed domain transcoding" CRLF);
+    printf("                               0: All subbands included (default)" CRLF);
+    printf("                               1: Skip flexbits" CRLF);
+    printf("                               2: Skip highpass" CRLF);
+    printf("                               3: Skip highpass & lowpass (DC only)" CRLF);
     printf(CRLF);
 
     printf("  -a alpha decode              0: Decode without alpha channel" CRLF);
@@ -200,7 +256,7 @@ void WmpDecAppShowArgs(WMPDECAPPARGS* args)
     printf("================================" CRLF);
     printf("Input file:     %s" CRLF, args->szInputFile);
     printf("Output file:    %s" CRLF, args->szOutputFile);
-    printf("Color format:   %08X-%04X-%04X-%02X%02X%02X%02X%02X%02X%02X%02X" CRLF, 
+    printf("Color format:   %08X-%04X-%04X-%02X%02X%02X%02X%02X%02X%02X%02X" CRLF,
         guidPF.Data1, guidPF.Data2, guidPF.Data3, guidPF.Data4[0], guidPF.Data4[1], guidPF.Data4[2],
         guidPF.Data4[3], guidPF.Data4[4], guidPF.Data4[5], guidPF.Data4[6], guidPF.Data4[7]);
     printf("Post processing strength: %d" CRLF, args->cPostProcStrength);
@@ -234,7 +290,7 @@ Cleanup:
     return err;
 }
 
-ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args)
+ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args, sbVar* pSBVar)
 {
     ERR err = WMP_errSuccess;
 
@@ -267,7 +323,7 @@ ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args)
         &GUID_PKPixelFormat32bppCMYK,
         &GUID_PKPixelFormat64bppCMYK,
 
-        &GUID_PKPixelFormat12bppYUV420, 
+        &GUID_PKPixelFormat12bppYUV420,
         &GUID_PKPixelFormat16bppYUV422,
         &GUID_PKPixelFormat24bppYUV444,
 
@@ -292,6 +348,7 @@ ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args)
 
     size_t InvalidPF[9] = {6, 13, 19, 20, 21, 26, 35, 36, 37};
     int k;
+	
 
     WmpDecAppInitDefaultArgs(args);
 
@@ -303,7 +360,9 @@ ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args)
             case 't':
                 // NOOP - now we always print timing info
                 break;
-
+			case 'F':
+				pSBVar->flag = TRUE;		
+				break;
             case 'v':
                 args->bVerbose = !FALSE;
                 break;
@@ -311,8 +370,8 @@ ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args)
             case 'C':
                 args->bIgnoreOverlap = TRUE;
                 break;
-            
-            case 'f': 
+
+            case 'f':
                 args->bfBitstreamFormat = FREQUENCY;
                 break;
 
@@ -320,7 +379,7 @@ ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args)
                 i ++;
                 if (i == argc || argv[i][0] == '-') // need more info
                     Call(WMP_errInvalidArgument);
-                
+
                 switch (c)
                 {
                 case 'i':
@@ -330,7 +389,7 @@ ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args)
                 case 'o':
                     args->szOutputFile = argv[i];
                     break;
-                
+
                 case 'p':
                     args->cPostProcStrength = (U8)atoi(argv[i]);
                     break;
@@ -355,15 +414,15 @@ ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args)
                     break;
                 }
 
-/*                case 'R': 
+/*                case 'R':
                     args->bFlagRGB_BGR = (Bool)atoi(argv[i]);
                     break;
 */
-                case 'a': 
+                case 'a':
                     args->uAlphaMode = (U8)atoi(argv[i]);
                     break;
 
-                case 's': 
+                case 's':
                     args->sbSubband = (SUBBAND)atoi(argv[i]);
                     break;
 
@@ -402,10 +461,6 @@ ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args)
     Call(WmpDecAppValidateArgs(args));
 
 Cleanup:
-    if (WMP_errSuccess != err)
-    {
-        WmpDecAppUsage(argv[0]);
-    }
     return err;
 }
 
@@ -425,9 +480,9 @@ ERR WmpDecAppCreateEncoderFromExt(
 
     // get encod PKIID
     Call(GetTestEncodeIID(szExt, &pIID));
-
+	void* dummy;/*rabih edit to make things maybe work...*/
     // Create encoder
-    Call(PKTestFactory_CreateCodec(pIID, ppIE));
+    Call(PKTestFactory_CreateCodec(pIID, ppIE, (ARGInputs*)dummy));
 
 Cleanup:
     return err;
@@ -437,7 +492,7 @@ Cleanup:
 //================================================================
 // main function
 //================================================================
-int 
+int
 #ifndef __ANSI__
 __cdecl
 #endif // __ANSI__
@@ -450,6 +505,9 @@ main(int argc, char* argv[])
     PKImageDecode* pDecoder = NULL;
 
     WMPDECAPPARGS args = {0};
+	sbVar sbvar = {0};
+	sbVar * pSBVar = &sbvar;
+	initSBVar(pSBVar); /*rabih added ^*/
     char* pExt = NULL;
     U32 cFrame = 0;
     U32 i = 0;
@@ -464,7 +522,32 @@ main(int argc, char* argv[])
         return 0;
     }
 
-    Call(WmpDecAppParseArgs(argc, argv, &args));
+    Call(WmpDecAppParseArgs(argc, argv, &args, pSBVar));
+	//printf("the flag is set to %d\n",pSBVar->flag);
+	if(pSBVar->flag)
+	{
+		//printf("made it here so far...");
+		// grab the stepSize from out.jxr 
+		//we will use stepSize in scaleback after we make out.tif
+		FILE *fps;
+		double * temp;
+		temp = (double *)calloc(1, sizeof(double));
+		fps = fopen(args.szInputFile, "rb");
+		//pSBVar->scale is found as the last entry into the file as a double.
+		if(fseek(fps, -1*sizeof(double),SEEK_END) == 0)
+		{
+			fread(temp, sizeof(*temp), 1, fps); //maybe this works...
+			pSBVar->scale = *temp;
+		}
+		else
+		{
+			printf("it broke...\n");
+			exit(1);
+		}
+		fclose(fps);
+		//printf("this is what i pulled from file for scale: %e\n",pSBVar->scale);
+
+	}
     if (args.bVerbose)
     {
         WmpDecAppShowArgs(&args);
@@ -472,11 +555,11 @@ main(int argc, char* argv[])
 
     //================================
     pExt = strrchr(args.szOutputFile, '.');
-    FailIf(NULL == pExt, WMP_errUnsupportedFormat);
+    //FailIf(NULL == pExt, WMP_errUnsupportedFormat);
 
     //================================
     Call(PKCreateFactory(&pFactory, PK_SDK_VERSION));
-    
+
     Call(PKCreateCodecFactory(&pCodecFactory, WMP_SDK_VERSION));
     Call(pCodecFactory->CreateDecoderFromFile(args.szInputFile, &pDecoder));
 
@@ -532,7 +615,7 @@ main(int argc, char* argv[])
     pDecoder->WMP.wmiI.bSkipFlexbits = FALSE;
     if(args.tThumbnailFactor > 0 && args.tThumbnailFactor != SKIPFLEXBITS){
         size_t tSize = ((size_t)1 << args.tThumbnailFactor);
-        
+
         pDecoder->WMP.wmiI.cThumbnailWidth = (pDecoder->WMP.wmiI.cWidth + tSize - 1) / tSize;
         pDecoder->WMP.wmiI.cThumbnailHeight = (pDecoder->WMP.wmiI.cHeight + tSize - 1) / tSize;
 
@@ -557,7 +640,7 @@ main(int argc, char* argv[])
     pDecoder->WMP.wmiI.oOrientation = args.oOrientation;
 
     pDecoder->WMP.wmiI.cPostProcStrength = args.cPostProcStrength;
-    
+
     pDecoder->WMP.wmiSCP.bVerbose = args.bVerbose;
 
     Call(pDecoder->GetFrameCount(pDecoder, &cFrame));
@@ -605,7 +688,7 @@ main(int argc, char* argv[])
         Call(pEncoder->SetSize(pEncoder, rect.Width, rect.Height));
 
         Call(pDecoder->GetResolution(pDecoder, &rX, &rY));
-        if(args.oOrientation > O_FLIPVH) 
+        if(args.oOrientation > O_FLIPVH)
             Call(pEncoder->SetResolution(pEncoder, rY, rX));
         else
             Call(pEncoder->SetResolution(pEncoder, rX, rY));
@@ -616,6 +699,8 @@ main(int argc, char* argv[])
         }
 
         //================================
+		pSBVar->wid = rect.Width;
+		pSBVar->hei = rect.Height;
 		pEncoder->WriteSource = PKImageEncode_Transcode;
         Call(pEncoder->WriteSource(pEncoder, pConverter, &rect));
 
@@ -633,12 +718,25 @@ main(int argc, char* argv[])
     }
 
     pDecoder->Release(&pDecoder);
+	//call scaleback function to rewrite the result to the original floating point
+	if(pSBVar->flag)
+	{
+		//populate pSBVar correctly, then call scaleback
+		if(args.szOutputFile != pSBVar->inputFileF)
+			pSBVar->inputFileF = args.szOutputFile;
+		scaleback(pSBVar);
+	}
+
 
 Cleanup:
     if (WMP_errUnsupportedFormat == err)
     {
         printf("*** ERROR: Unsupported format in JPEG XR ***\n");
     }
-    
+    else if (WMP_errSuccess != err)
+    {
+        WmpDecAppUsage(argv[0]);
+    }
+
     return (int)err;
 }

@@ -1,14 +1,14 @@
 //*@@@+++@@@@******************************************************************
 //
-// Copyright © Microsoft Corp.
+// Copyright ï¿½ Microsoft Corp.
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 
-// • Redistributions of source code must retain the above copyright notice,
+// ï¿½ Redistributions of source code must retain the above copyright notice,
 //   this list of conditions and the following disclaimer.
-// • Redistributions in binary form must reproduce the above copyright notice,
+// ï¿½ Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // 
@@ -28,8 +28,8 @@
 
 #pragma once
 /*************************************************************************
-* DEFINITIONS OF NEW TYPES 
-*************************************************************************/
+ * DEFINITIONS OF NEW TYPES 
+ *************************************************************************/
 #if !defined(__midl)
 #define __$compname_props \
         __type_has_adt_prop(compname,nullterminated) \
@@ -41,24 +41,29 @@
 #else
 #define  __$TCHAR char
 #endif
-typedef __$compname_props char* ValidCompNameA;
-typedef __$compname_props unsigned short* ValidCompNameW;
-typedef __$compname_props const unsigned short* ConstValidCompNameW;
-typedef __$compname_props  __$TCHAR* SAL_ValidCompNameT;
-typedef __$compname_props const  __$TCHAR* SAL_ConstValidCompNameT;
+typedef __$compname_props
+char* ValidCompNameA;
+typedef __$compname_props
+unsigned short* ValidCompNameW;
+typedef __$compname_props
+const unsigned short* ConstValidCompNameW;
+typedef __$compname_props
+__$TCHAR* SAL_ValidCompNameT;
+typedef __$compname_props
+const __$TCHAR* SAL_ConstValidCompNameT;
 #undef __$compname_props
 #undef __$TCHAR
 #endif
 
 /*************************************************************************
-* DEFINITIONS OF INLINE FUNCTIONS FOR CASTING TO THE NEW TYPES : USER
-*************************************************************************/
+ * DEFINITIONS OF INLINE FUNCTIONS FOR CASTING TO THE NEW TYPES : USER
+ *************************************************************************/
 #if (_MSC_VER >= 1000) && !defined(__midl) && defined(_PREFAST_)
 #ifdef  __cplusplus
 extern "C" {
 #endif
-void __inline __nothrow __SAL_ValidCompNameA(__out_has_type_adt_props(ValidCompNameA) const void *expr) { expr;}
-void __inline __nothrow __SAL_ValidCompNameW(__out_has_type_adt_props(ValidCompNameW) const void *expr) { expr;}
+	void __inline __nothrow __SAL_ValidCompNameA(__out_has_type_adt_props(ValidCompNameA) const void *expr) {expr;}
+	void __inline __nothrow __SAL_ValidCompNameW(__out_has_type_adt_props(ValidCompNameW) const void *expr) {expr;}
 #ifdef  __cplusplus
 }
 #endif

@@ -1,14 +1,14 @@
 //+---------------------------------------------------------------------------
 //
-// Copyright © Microsoft Corp.
+// Copyright ï¿½ Microsoft Corp.
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 
-// • Redistributions of source code must retain the above copyright notice,
+// ï¿½ Redistributions of source code must retain the above copyright notice,
 //   this list of conditions and the following disclaimer.
-// • Redistributions in binary form must reproduce the above copyright notice,
+// ï¿½ Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // 
@@ -34,21 +34,21 @@
 #define GUID_DEFINED
 #if defined(__midl)
 typedef struct {
-    unsigned long  Data1;
-    unsigned short Data2;
-    unsigned short Data3;
-    byte           Data4[ 8 ];
-} GUID;
+	unsigned long Data1;
+	unsigned short Data2;
+	unsigned short Data3;
+	byte Data4[ 8 ];
+}GUID;
 #else
 typedef struct _GUID {
 #if defined(_WINDOWS_) || !__LP64__
-    unsigned long  Data1;
+	unsigned long Data1;
 #else
-    unsigned int   Data1;
+	unsigned int Data1;
 #endif
-    unsigned short Data2;
-    unsigned short Data3;
-    unsigned char  Data4[ 8 ];
+	unsigned short Data2;
+	unsigned short Data3;
+	unsigned char Data4[8];
 } GUID;
 #endif
 #endif
@@ -89,7 +89,6 @@ typedef struct _GUID {
 #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
     EXTERN_C const GUID FAR name
 #endif // INITGUID
-
 #define DEFINE_OLEGUID(name, l, w1, w2) DEFINE_GUID(name, l, w1, w2, 0xC0,0,0,0,0,0,0,0x46)
 
 #ifndef _GUIDDEF_H_
@@ -164,7 +163,6 @@ typedef FMTID *LPFMTID;
 #endif
 
 #endif // !__IID_DEFINED__
-
 #if !defined (__midl)
 #if !defined (_SYS_GUID_OPERATORS_)
 #define _SYS_GUID_OPERATORS_
@@ -174,20 +172,19 @@ typedef FMTID *LPFMTID;
 #ifdef __cplusplus
 __inline int InlineIsEqualGUID(REFGUID rguid1, REFGUID rguid2)
 {
-   return (
-      ((unsigned long *) &rguid1)[0] == ((unsigned long *) &rguid2)[0] &&
-      ((unsigned long *) &rguid1)[1] == ((unsigned long *) &rguid2)[1] &&
-      ((unsigned long *) &rguid1)[2] == ((unsigned long *) &rguid2)[2] &&
-      ((unsigned long *) &rguid1)[3] == ((unsigned long *) &rguid2)[3]);
+	return (
+			((unsigned long *) &rguid1)[0] == ((unsigned long *) &rguid2)[0] &&
+			((unsigned long *) &rguid1)[1] == ((unsigned long *) &rguid2)[1] &&
+			((unsigned long *) &rguid1)[2] == ((unsigned long *) &rguid2)[2] &&
+			((unsigned long *) &rguid1)[3] == ((unsigned long *) &rguid2)[3]);
 }
 
 __inline int IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
 {
-    return !memcmp(&rguid1, &rguid2, sizeof(GUID));
+	return !memcmp(&rguid1, &rguid2, sizeof(GUID));
 }
 
 #else   // ! __cplusplus
-
 #define InlineIsEqualGUID(rguid1, rguid2)  \
         (((unsigned long *) rguid1)[0] == ((unsigned long *) rguid2)[0] &&   \
         ((unsigned long *) rguid1)[1] == ((unsigned long *) rguid2)[1] &&    \
@@ -197,7 +194,6 @@ __inline int IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
 #define IsEqualGUID(rguid1, rguid2) (!memcmp(rguid1, rguid2, sizeof(GUID)))
 
 #endif  // __cplusplus
-
 #ifdef __INLINE_ISEQUAL_GUID
 #undef IsEqualGUID
 #define IsEqualGUID(rguid1, rguid2) InlineIsEqualGUID(rguid1, rguid2)
@@ -208,7 +204,6 @@ __inline int IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
 #define IsEqualIID(riid1, riid2) IsEqualGUID(riid1, riid2)
 #define IsEqualCLSID(rclsid1, rclsid2) IsEqualGUID(rclsid1, rclsid2)
 
-
 #if !defined _SYS_GUID_OPERATOR_EQ_ && !defined _NO_SYS_GUID_OPERATOR_EQ_
 #define _SYS_GUID_OPERATOR_EQ_
 // A couple of C++ helpers
@@ -216,12 +211,12 @@ __inline int IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
 #ifdef __cplusplus
 __inline int operator==(REFGUID guidOne, REFGUID guidOther)
 {
-    return IsEqualGUID(guidOne,guidOther);
+	return IsEqualGUID(guidOne,guidOther);
 }
 
 __inline int operator!=(REFGUID guidOne, REFGUID guidOther)
 {
-    return !(guidOne == guidOther);
+	return !(guidOne == guidOther);
 }
 #endif
 #endif  // _SYS_GUID_OPERATOR_EQ_

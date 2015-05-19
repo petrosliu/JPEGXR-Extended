@@ -1,14 +1,14 @@
 //*@@@+++@@@@******************************************************************
 //
-// Copyright © Microsoft Corp.
+// Copyright ï¿½ Microsoft Corp.
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 
-// • Redistributions of source code must retain the above copyright notice,
+// ï¿½ Redistributions of source code must retain the above copyright notice,
 //   this list of conditions and the following disclaimer.
-// • Redistributions in binary form must reproduce the above copyright notice,
+// ï¿½ Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // 
@@ -30,25 +30,25 @@
 #define WMI_DECODE_H
 
 typedef struct CWMDecoderParameters {
-    /** ROI decode **/
-    Bool bDecodeFullFrame;
-    Bool bDecodeFullWidth;
+	/** ROI decode **/
+	Bool bDecodeFullFrame;
+	Bool bDecodeFullWidth;
 
-    /** thumbnail decode **/
-    Bool bSkipFlexbits;
-    size_t cThumbnailScale;    // 1: cThumbnailScale thumbnail, only supports cThumbnailScale = 2^m for now
-    Bool bDecodeHP;
-    Bool bDecodeLP;
+	/** thumbnail decode **/
+	Bool bSkipFlexbits;
+	size_t cThumbnailScale; // 1: cThumbnailScale thumbnail, only supports cThumbnailScale = 2^m for now
+	Bool bDecodeHP;
+	Bool bDecodeLP;
 
-    // Region of interest decoding
-    size_t cROILeftX;
-    size_t cROIRightX;
-    size_t cROITopY;
-    size_t cROIBottomY;
+	// Region of interest decoding
+	size_t cROILeftX;
+	size_t cROIRightX;
+	size_t cROITopY;
+	size_t cROIBottomY;
 
-    // table lookups for rotation and flip
-    size_t * pOffsetX;
-    size_t * pOffsetY;
+	// table lookups for rotation and flip
+	size_t * pOffsetX;
+	size_t * pOffsetY;
 } CWMDecoderParameters;
 
 Void predCBPDec(CWMImageStrCodec *, CCodingContext *);
@@ -59,9 +59,12 @@ Int dequantizeMacroblock(CWMImageStrCodec *);
 Int invTransformMacroblock(CWMImageStrCodec * pSC);
 Int invTransformMacroblock_alteredOperators_hard(CWMImageStrCodec * pSC);
 
-Int DecodeMacroblockDC(CWMImageStrCodec * pSC, CCodingContext *pContext, Int iMBX, Int iMBY);
-Int DecodeMacroblockLowpass(CWMImageStrCodec * pSC, CCodingContext *pContext, Int iMBX, Int iMBY);
-Int DecodeMacroblockHighpass(CWMImageStrCodec * pSC, CCodingContext *pContext, Int iMBX, Int iMBY);
+Int DecodeMacroblockDC(CWMImageStrCodec * pSC, CCodingContext *pContext,
+		Int iMBX, Int iMBY);
+Int DecodeMacroblockLowpass(CWMImageStrCodec * pSC, CCodingContext *pContext,
+		Int iMBX, Int iMBY);
+Int DecodeMacroblockHighpass(CWMImageStrCodec * pSC, CCodingContext *pContext,
+		Int iMBX, Int iMBY);
 
 Int AdaptLowpassDec(struct CCodingContext *);
 Int AdaptHighpassDec(struct CCodingContext *);
@@ -140,4 +143,3 @@ Void strPost4x4Stage2Split_alternate(PixelI*, PixelI*);
 Int getHuff(const short *pDecodeTable, BitIOInfo* pIO);
 
 #endif // WMI_DECODE_H
-

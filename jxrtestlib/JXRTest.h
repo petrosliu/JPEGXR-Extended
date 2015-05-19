@@ -1,14 +1,14 @@
 //*@@@+++@@@@******************************************************************
 //
-// Copyright © Microsoft Corp.
+// Copyright ï¿½ Microsoft Corp.
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 
-// • Redistributions of source code must retain the above copyright notice,
+// ï¿½ Redistributions of source code must retain the above copyright notice,
 //   this list of conditions and the following disclaimer.
-// • Redistributions in binary form must reproduce the above copyright notice,
+// ï¿½ Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // 
@@ -26,137 +26,150 @@
 //
 //*@@@---@@@@******************************************************************
 #pragma once
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <JXRGlue.h>
 
-EXTERN_C const PKIID IID_PKImageBmpEncode;
-EXTERN_C const PKIID IID_PKImagePnmEncode;
-EXTERN_C const PKIID IID_PKImageTifEncode;
-
-EXTERN_C const PKIID IID_PKImageBmpDecode;
-EXTERN_C const PKIID IID_PKImagePnmDecode;
-EXTERN_C const PKIID IID_PKImageTifDecode;
+	EXTERN_C const PKIID IID_PKImageBmpEncode;
+	EXTERN_C const PKIID IID_PKImagePnmEncode;
+	EXTERN_C const PKIID IID_PKImageTifEncode;
+	EXTERN_C const PKIID IID_PKImageRawEncode;/* Rabih added */
+	EXTERN_C const PKIID IID_PKImageRawDecode;/* Rabih added */
+	EXTERN_C const PKIID IID_PKImageBmpDecode;
+	EXTERN_C const PKIID IID_PKImagePnmDecode;
+	EXTERN_C const PKIID IID_PKImageTifDecode;
 
 //----------------------------------------------------------------
-ERR GetTestEncodeIID(const char* szExt, const PKIID** ppIID);
-ERR GetTestDecodeIID(const char* szExt, const PKIID** ppIID);
+	ERR GetTestEncodeIID(const char* szExt, const PKIID** ppIID);
+	ERR GetTestDecodeIID(const char* szExt, const PKIID** ppIID);
 
 //================================================================
 #ifdef __ANSI__
 #define PKTestDecode struct tagPKTestDecode
 #else // __ANSI__
-typedef struct tagPKTestDecode PKTestDecode;
+	typedef struct tagPKTestDecode PKTestDecode;
 #endif // __ANSI__
 //================================================================
+	//------------------------------------------------
+	//defined in JXRGlue.h
+//typedef struct
+//	{
+//		int end; //endianness
+//		int bpi;
+//		int wid;
+//		int hei;
+//		int isFloat;
+//		char* inputFile;
+//		char* outputFile;
+//		//may or may not need more...
+//		int quant;
+//	
+//	} ARGInputs;
+//----------------------------------------------------------------
+	ERR PKTestFactory_CreateCodec(const PKIID* iid, void** ppv, ARGInputs* pMyArgs);
+	EXTERN_C ERR PKCreateTestFactory(PKCodecFactory**, U32, ARGInputs* pMyArgs);
 
 //----------------------------------------------------------------
-ERR PKTestFactory_CreateCodec(const PKIID* iid, void** ppv);
-
-EXTERN_C ERR PKCreateTestFactory(PKCodecFactory**, U32);
-
-//----------------------------------------------------------------
-ERR PKImageEncode_Create_BMP(PKImageEncode** ppIE);
-ERR PKImageEncode_Create_PNM(PKImageEncode** ppIE);
-ERR PKImageEncode_Create_TIF(PKImageEncode** ppIE);
-ERR PKImageEncode_Create_HDR(PKImageEncode** ppIE);
-ERR PKImageEncode_Create_IYUV(PKImageEncode** ppIE);
-ERR PKImageEncode_Create_YUV422(PKImageEncode** ppIE);
-ERR PKImageEncode_Create_YUV444(PKImageEncode** ppIE);
+	ERR PKImageEncode_Create_BMP(PKImageEncode** ppIE);
+	ERR PKImageEncode_Create_PNM(PKImageEncode** ppIE);
+	ERR PKImageEncode_Create_TIF(PKImageEncode** ppIE);
+	ERR PKImageEncode_Create_HDR(PKImageEncode** ppIE);
+	ERR PKImageEncode_Create_IYUV(PKImageEncode** ppIE);
+	ERR PKImageEncode_Create_YUV422(PKImageEncode** ppIE);
+	ERR PKImageEncode_Create_YUV444(PKImageEncode** ppIE);
 
 //================================================================
-typedef struct tagPKTestDecode
-{
-    ERR (*Initialize)(PKTestDecode*, struct WMPStream* pStream);
+	typedef struct tagPKTestDecode {
+		ERR (*Initialize)(PKTestDecode*, struct WMPStream* pStream);
 
-    ERR (*GetPixelFormat)(PKImageDecode*, PKPixelFormatGUID*);
-    ERR (*GetSize)(PKImageDecode*, I32*, I32*);
-    ERR (*GetResolution)(PKImageDecode*, Float*, Float*);
-    ERR (*GetColorContext)(PKImageDecode *pID, U8 *pbColorContext,
-        U32 *pcbColorContext);
-    ERR (*GetDescriptiveMetadata)(PKImageDecode *pIE,
-        DESCRIPTIVEMETADATA *pDescMetadata);
+		ERR (*GetPixelFormat)(PKImageDecode*, PKPixelFormatGUID*);
+		ERR (*GetSize)(PKImageDecode*, I32*, I32*);
+		ERR (*GetResolution)(PKImageDecode*, Float*, Float*);
+		ERR (*GetColorContext)(PKImageDecode *pID, U8 *pbColorContext,
+				U32 *pcbColorContext);
+		ERR (*GetDescriptiveMetadata)(PKImageDecode *pIE,
+				DESCRIPTIVEMETADATA *pDescMetadata);
 
-    ERR (*GetRawStream)(PKImageDecode*, struct WMPStream**);
+		ERR (*GetRawStream)(PKImageDecode*, struct WMPStream**);
 
-    ERR (*Copy)(PKTestDecode*, const PKRect*, U8*, U32);
+		ERR (*Copy)(PKTestDecode*, const PKRect*, U8*, U32);
 
-    ERR (*GetFrameCount)(PKImageDecode*, U32*);
-    ERR (*SelectFrame)(PKImageDecode*, U32);
+		ERR (*GetFrameCount)(PKImageDecode*, U32*);
+		ERR (*SelectFrame)(PKImageDecode*, U32);
 
-    ERR (*Release)(PKTestDecode**);
+		ERR (*Release)(PKTestDecode**);
 
-    struct WMPStream* pStream;
-    Bool fStreamOwner;
-    size_t offStart;
-    
-    PKPixelFormatGUID guidPixFormat;
+		struct WMPStream* pStream;
+		Bool fStreamOwner;
+		size_t offStart;
 
-    U32 uWidth;
-    U32 uHeight;
-    U32 idxCurrentLine;
+		PKPixelFormatGUID guidPixFormat;
 
-    Float fResX;
-    Float fResY;
+		U32 uWidth;
+		U32 uHeight;
+		U32 idxCurrentLine;
 
-    U32 cFrame;
+		Float fResX;
+		Float fResY;
 
-    union
-    {
-        struct
-        {
-            size_t offPixel;
-            size_t cbPixel;
-        } BMP;
-        struct
-        {
-            size_t offPixel;
-            size_t cbPixel;
-        } HDR;
-        struct
-        {
-            size_t offPixel;
-        } PNM;
-        struct
-        {
-            U32 uRowsPerStrip;
-            U32* uStripOffsets;
-            U32* uStripByteCounts;
+		U32 cFrame;
 
-            U32 uInterpretation;
-            U32 uSamplePerPixel;
-            U32 uBitsPerSample;
-            U32 uSampleFormat;
-            U32 uExtraSamples;
+		union {
+			struct {
+				size_t offPixel;
+				size_t cbPixel;
+			} BMP;
+			struct {
+				size_t offPixel;
+				size_t cbPixel;
+			} HDR;
+			struct {
+				size_t offPixel;
+			} PNM;
+			struct {
+				U32 uRowsPerStrip;
+				U32* uStripOffsets;
+				U32* uStripByteCounts;
 
-            U16 uResolutionUnit;
-            Float fResX;
-            Float fResY;
-            Bool fLittleEndian;
-        } TIF;
-    } EXT;
+				U32 uInterpretation;
+				U32 uSamplePerPixel;
+				U32 uBitsPerSample;
+				U32 uSampleFormat;
+				U32 uExtraSamples;
+
+				U16 uResolutionUnit;
+				Float fResX;
+				Float fResY;
+				Bool fLittleEndian;
+				double stepSize; //used if isFloat
+
+			} TIF;
+		} EXT;
 #ifdef __ANSI__
 #undef PKTestDecode
 #endif // __ANSI__
-} PKTestDecode;
+	} PKTestDecode;
+	//------------------------------------------------
 
 //----------------------------------------------------------------
-ERR PKImageDecode_Create_BMP(PKTestDecode** ppID);
-ERR PKImageDecode_Create_PNM(PKTestDecode** ppID);
-ERR PKImageDecode_Create_TIF(PKTestDecode** ppID);
-ERR PKImageDecode_Create_HDR(PKTestDecode** ppID);
-ERR PKImageDecode_Create_IYUV(PKTestDecode** ppID);
-ERR PKImageDecode_Create_YUV422(PKTestDecode** ppID);
-ERR PKImageDecode_Create_YUV444(PKTestDecode** ppID);
+	ERR PKImageDecode_Create_BMP(PKTestDecode** ppID);
+	ERR PKImageDecode_Create_PNM(PKTestDecode** ppID);
+	ERR PKImageDecode_Create_TIF(PKTestDecode** ppID);
+	ERR PKImageDecode_Create_HDR(PKTestDecode** ppID);
+	ERR PKImageDecode_Create_IYUV(PKTestDecode** ppID);
+	ERR PKImageDecode_Create_YUV422(PKTestDecode** ppID);
+	ERR PKImageDecode_Create_YUV444(PKTestDecode** ppID);
+	ERR PKImageDecode_Create_RAW(PKTestDecode** ppID);
 
-ERR PKTestDecode_Initialize(PKTestDecode* pID, struct WMPStream* pStream);
-ERR PKTestDecode_Copy(PKTestDecode* pID, const PKRect* pRect, U8* pb, U32 cbStride);
-ERR PKTestDecode_Release(PKTestDecode** ppID);
 
-ERR PKTestDecode_Create(PKTestDecode** ppID);
+	ERR PKTestDecode_Initialize(PKTestDecode* pID, struct WMPStream* pStream);
+	ERR PKTestDecode_Copy(PKTestDecode* pID, const PKRect* pRect, U8* pb,
+			U32 cbStride);
+	ERR PKTestDecode_Release(PKTestDecode** ppID);
+
+	ERR PKTestDecode_Create(PKTestDecode** ppID);
 
 #ifdef __cplusplus
 } // extern "C"
