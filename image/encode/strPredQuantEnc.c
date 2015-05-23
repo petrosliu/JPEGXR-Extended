@@ -53,7 +53,7 @@ Int quantizeMacroblock(CWMImageStrCodec* pSC) {
 	const COLORFORMAT cf = pSC->m_param.cfColorFormat;
 	int iChannel, i, j;
 
-	if (/*pSC->m_param.bScaledArith && */pSC->m_param.bTranscode == FALSE)
+	if (/*pSC->m_param.bScaledArith && */pSC->m_param.bTranscode == FALSE){
 		for (iChannel = 0; iChannel < (int) pSC->m_param.cNumChannels;
 				iChannel++) {
 			const Bool bUV = (iChannel > 0
@@ -73,34 +73,38 @@ Int quantizeMacroblock(CWMImageStrCodec* pSC) {
 			for (j = 0; j < iNumBlock; j++) {
 				PixelI * pData = pSC->pPlane[iChannel] + pOffset[j];
 
-				if (j == 0) // DC
+				if (j == 0){ // DC
 					pData[0] = (
 							pQPDC->iMan == 0 ?
 									QUANT_Mulless(pData[0], pQPDC->iOffset,
 											pQPDC->iExp) :
 									QUANT(pData[0], pQPDC->iOffset, pQPDC->iMan,
 											pQPDC->iExp));
-				else if (pSC->WMISCP.sbSubband != SB_DC_ONLY) // LP
+				}
+				else if (pSC->WMISCP.sbSubband != SB_DC_ONLY) {// LP
 					pData[0] = (
 							pQPLP->iMan == 0 ?
 									QUANT_Mulless(pData[0], pQPLP->iOffset,
 											pQPLP->iExp) :
 									QUANT(pData[0], pQPLP->iOffset, pQPLP->iMan,
 											pQPLP->iExp));
-
+				}
 				// quantize HP
 				if (pSC->WMISCP.sbSubband != SB_DC_ONLY
-						&& pSC->WMISCP.sbSubband != SB_NO_HIGHPASS)
-					for (i = 1; i < 16; i++)
+						&& pSC->WMISCP.sbSubband != SB_NO_HIGHPASS){
+					for (i = 1; i < 16; i++){
 						pData[i] = (
 								pQPHP->iMan == 0 ?
 										QUANT_Mulless(pData[i], pQPHP->iOffset,
 												pQPHP->iExp) :
 										QUANT(pData[i], pQPHP->iOffset,
 												pQPHP->iMan, pQPHP->iExp));
+					}
+				}
 			}
 		}
-
+	}
+	
 	for (iChannel = 0; iChannel < (int) pSC->m_param.cNumChannels; iChannel++) {
 		I32 * pDC = pSC->MBInfo.iBlockDC[iChannel];
 		PixelI * pData = pSC->pPlane[iChannel];

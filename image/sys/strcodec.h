@@ -159,6 +159,9 @@ typedef struct tagBitIOInfo {
 
 	U32 uiAccumulator; // 32bit acc as bit field cache
 	U32 cBitsUsed; // # of bits used of acc, [0,16)
+	
+	U32 cBitsCounter; //YD added
+	
 #ifdef ARMOPT_BITIO
 	U32 cBitsUnused; // # of bits remain unused in acc, [0,32]
 #endif

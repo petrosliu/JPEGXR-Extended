@@ -228,8 +228,9 @@ Int writeTileHeaderHP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 	CCodingContext * pContext = &pSC->m_pCodingContext[pSC->cTileColumn];
 	#if 0
-    if(pSC->cColumn<3||pSC->cColumn>33) printf("\teMB %d %d\n",iMBY,iMBX);
+    	if(pSC->cColumn<3||pSC->cColumn>33) printf("\teMB %d %d %d\n",iMBY,iMBX,pSC->cTileColumn);
     #endif
+	
 	if (pSC->m_bCtxLeft && pSC->m_bCtxTop && pSC->m_bSecondary == FALSE
 		&& pSC->m_param.bTranscode == FALSE) { // write packet headers
 		U8 pID = (U8)((pSC->cTileRow * (pSC->WMISCP.cNumOfSliceMinus1V + 1)
@@ -281,7 +282,7 @@ Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 		return ICERR_ERROR;
         }
     }
-
+	
 	if (iMBX + 1 == (int)pSC->cmbWidth
 		&& (iMBY + 1 == (int)pSC->cmbHeight
 		|| (pSC->cTileRow < pSC->WMISCP.cNumOfSliceMinus1H
@@ -306,6 +307,19 @@ Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 				ResetCodingContextEnc(&pSC->m_pCodingContext[k]);
 		}
 	}
+	
+	#if 0 //YD added
+	int k;
+	for (k = 0; k < pSC->cNumBitIO; k++) {
+		printf("%d ",pSC->m_ppBitIO[k]->cBitsUsed);
+	}
+	for (k = 0; k < pSC->cNumBitIO; k++) {
+		printf("%d ",pSC->m_ppBitIO[k]->cBitsCounter);
+	}
+	printf("\n");
+	#endif
+	
+	
 	return ICERR_OK;
 }
 
@@ -315,9 +329,10 @@ Top level function for processing a macroblock worth of input
 //  added by zx 
 Int transformMB(CWMImageStrCodec *pSC) {
 	#if 0
-    if(pSC->cColumn<3||pSC->cColumn>33)
-		printf("tMB %d %d/%d\n",pSC->cRow,pSC->cColumn,pSC->cmbWidth);
+    	if(pSC->cColumn<3||pSC->cColumn>33)
+			printf("tMB %d %d/%d\n",pSC->cRow,pSC->cColumn,pSC->cmbWidth);
 	#endif
+	
     Bool topORleft = (pSC->cColumn == 0 || pSC->cRow == 0);
     ERR_CODE result = ICERR_OK;
     size_t j, jend = (pSC->m_pNextSC != NULL);
@@ -368,8 +383,10 @@ Int transformMB(CWMImageStrCodec *pSC) {
 
 Int processMacroblock(CWMImageStrCodec *pSC) {
 	#if 0
-    if(pSC->cColumn<3||pSC->cColumn>33) printf("pMB %d %d/%d\n",pSC->cRow,pSC->cColumn,pSC->cmbWidth);
+    	if(pSC->cColumn<3||pSC->cColumn>33) 
+			printf("pMB %d %d/%d\n",pSC->cRow,pSC->cColumn,pSC->cmbWidth);
     #endif
+	
 	Bool topORleft = (pSC->cColumn == 0 || pSC->cRow == 0);
     ERR_CODE result = ICERR_OK;
     size_t j, jend = (pSC->m_pNextSC != NULL);
@@ -385,13 +402,13 @@ Int processMacroblock(CWMImageStrCodec *pSC) {
 			memcpy(p,transMB,stride*sizeof(PixelI));//YD added
 			
 			#if 0
-			int i,k;
-			for (i=0;i<16;i++){
-				for (k=0;k<16;k++){
-				printf("%d ",*(pSC->pPlane[0]+k+i*16));
+				int i,k;
+				for (i=0;i<16;i++){
+					for (k=0;k<16;k++){
+					printf("%d ",*(pSC->pPlane[0]+k+i*16));
+					}
+					printf("\n");
 				}
-				printf("\n");
-			}
 			#endif
 		
             getTilePos(pSC, (Int) pSC->cColumn - 1, (Int) pSC->cRow - 1);
@@ -678,7 +695,8 @@ Int writeIndexTable(CWMImageStrCodec * pSC) {
 					l
 					< (pSC->WMISCP.bfBitstreamFormat == FREQUENCY
 					&& pSC->WMISCP.bProgressiveMode ?
-					pSC->cSB : 1); l++, k++) {
+					pSC->cSB : 1);
+					l++, k++) {
 					if (i > 0)
 						pTable[pSC->cNumBitIO * i + k] -=
 						pSC->pIndexTable[pSC->cNumBitIO * (i - 1) + k]; // packet length
@@ -1542,7 +1560,7 @@ static Void InitializeStrEncTrans(CWMImageStrCodec *pSC, const CWMImageInfo* pII
 	pSC->transformedImage = (int32_t*)malloc((pSC->cmbWidth+1)*(pSC->cmbHeight+1)*16*16*sizeof(int32_t));
 	
 	#if 0
-    printf("\t\t\t\tInitializeStrEncTrans %d %d\n",pSC->cmbWidth,pSC->cmbHeight);
+    	printf("\t\t\t\tInitializeStrEncTrans %d %d\n",pSC->cmbWidth,pSC->cmbHeight);
     #endif
 	
 	pSC->Load = inputMBRow;
@@ -1569,7 +1587,7 @@ Streaming API init for transform
 Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	CTXSTRCODEC* pctxSC) {
 	#if 0
-    printf("\t\t\tImageStrEncTransInit\n");
+    	printf("\t\t\tImageStrEncTransInit\n");
     #endif
 	
     static size_t cbChannels[BD_MAX] = { 2, 4 };
@@ -1692,7 +1710,7 @@ Int ImageStrEncTrans(CTXSTRCODEC ctxSC, const CWMImageBufferInfo* pBI) {
     ImageDataProc ProcessLeft, ProcessCenter, ProcessRight;
     
 	#if 0
-    printf("\n\n\t\t\tImageStrEncTrans %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
+    	printf("\n\n\t\t\tImageStrEncTrans %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
     #endif
 	
     if (sizeof(*pSC) != pSC->cbStruct) {
@@ -1751,8 +1769,9 @@ Int ImageStrEncTransTerm(CTXSTRCODEC ctxSC) {
     CWMImageStrCodec* pSC = (CWMImageStrCodec*) ctxSC;
     // CWMImageStrCodec *pNextSC = pSC->m_pNextSC;
     #if 0
-    printf("\n\n\t\t\tImageStrEncTransTerm %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
+    	printf("\n\n\t\t\tImageStrEncTransTerm %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
     #endif
+	
     if (sizeof(*pSC) != pSC->cbStruct) {
         return ICERR_ERROR;
     }
@@ -1822,7 +1841,7 @@ static Void InitializeStrEnc(CWMImageStrCodec *pSC, const CWMImageInfo* pII,
 	pSC->transformedImage = pSCP->transformedImage;
 	
 	#if 0
-    printf("\t\t\t\tInitializeStrEnc %d %d\n",pSC->cmbWidth,pSC->cmbHeight);
+    	printf("\t\t\t\tInitializeStrEnc %d %d\n",pSC->cmbWidth,pSC->cmbHeight);
     #endif
 	
 	pSC->Load = inputMBRow;
@@ -1848,8 +1867,9 @@ Streaming API init for coding
 Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	CTXSTRCODEC* pctxSC) {
 	#if 0
-	printf("\t\t\tImageStrEncInit\n");
+		printf("\t\t\tImageStrEncInit\n");
     #endif
+	
     static size_t cbChannels[BD_MAX] = { 2, 4 };
     
     size_t cbChannel = 0, cblkChroma = 0, i;
@@ -1949,8 +1969,21 @@ Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	int const imageLength=(pSC0->cmbWidth+1)*(pSC0->cmbHeight+1)*stride;
 	pSC->transformedImage=(int32_t*)malloc(imageLength*sizeof(int32_t));
 	memcpy(pSC->transformedImage,pSC0->transformedImage,imageLength*sizeof(int32_t));
+	//clean pSC0
+	if (sizeof(*pSC0) != pSC->cbStruct)
+		return ICERR_ERROR;
+	if (pSC0->m_bUVResolutionChange) {
+		if (pSC0->pResU != NULL)
+			free(pSC->pResU);
+		if (pSC0->pResV != NULL)
+			free(pSC0->pResV);
+	}
+	freePredInfo(pSC0);
+	FreeCodingContextEnc(pSC0);
+	freeTileInfo(pSC0);
 	free(pSC0);
-    //================================================
+    //YD end
+	//================================================
     *pctxSC = (CTXSTRCODEC) pSC;
     
     writeIndexTableNull(pSC);
@@ -1972,9 +2005,11 @@ Int ImageStrEncEncode(CTXSTRCODEC ctxSC, const CWMImageBufferInfo* pBI) {
     CWMImageStrCodec* pSC = (CWMImageStrCodec*) ctxSC;
     CWMImageStrCodec* pNextSC = pSC->m_pNextSC;
     ImageDataProc ProcessLeft, ProcessCenter, ProcessRight;
-    #if 0
-    printf("\n\n\t\t\tImageStrEncEncode %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
+    
+	#if 0
+    	printf("\n\n\t\t\tImageStrEncEncode %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
     #endif
+	
     if (sizeof(*pSC) != pSC->cbStruct) {
         return ICERR_ERROR;
     }
@@ -2030,10 +2065,12 @@ Streaming API term
 Int ImageStrEncTerm(CTXSTRCODEC ctxSC) {
 	// CWMImageStrCodec *pNextSC = pSC->m_pNextSC;
     CWMImageStrCodec* pSC = (CWMImageStrCodec*) ctxSC;
+	
 	#if 0
-    printf("\t\t\tImageStrEncTerm %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
+    	printf("\t\t\tImageStrEncTerm %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
     #endif
-        // CWMImageStrCodec *pNextSC = pSC->m_pNextSC;
+	
+    // CWMImageStrCodec *pNextSC = pSC->m_pNextSC;
     
     if (sizeof(*pSC) != pSC->cbStruct) {
         return ICERR_ERROR;
@@ -2057,7 +2094,18 @@ Int ImageStrEncTerm(CTXSTRCODEC ctxSC) {
     //================================
 
 	pSC->ProcessBottomRight(pSC);
-    
+	
+	#if 1 //YD bit counter result
+	int k,c=0;
+	printf("DC LP AC FL\n");
+	for (k = 0; k < pSC->cNumBitIO; k++) {
+		c += pSC->m_ppBitIO[k]->cBitsCounter;
+		printf("%d ",pSC->m_ppBitIO[k]->cBitsCounter/8);
+	}
+	printf("\nSum: %d\n", c/8);
+	printf("Header %d\n",pSC->pIOHeader->cBitsCounter/8);
+	#endif
+	
     //================================
     StrEncTerm(pSC);
     

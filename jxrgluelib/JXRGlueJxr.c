@@ -737,8 +737,9 @@ ERR PKImageEncode_Terminate_WMP(PKImageEncode* pIE) {
 ERR PKImageEncode_EncodeContent_Init(PKImageEncode* pIE, PKPixelInfo PI,
 	U32 cLine, U8* pbPixels, U32 cbStride) {
 	#if 0
-    printf("\t\t\PKImageEncode_EncodeContent_Init %d %d\n",pIE->WMP.wmiI.cWidth,pIE->WMP.wmiI.cHeight);
+    	printf("\t\t\PKImageEncode_EncodeContent_Init %d %d\n",pIE->WMP.wmiI.cWidth,pIE->WMP.wmiI.cHeight);
 	#endif
+	
     ERR err = WMP_errSuccess;
 	
     // init codec
@@ -786,8 +787,9 @@ Cleanup: return err;
 ERR PKImageEncode_EncodeContent_Encode(PKImageEncode* pIE, U32 cLine,
 	U8* pbPixels, U32 cbStride) {
 	#if 0
-    printf("\t\tPKImageEncode_EncodeContent_Encode %d\n",cLine);
+    	printf("\t\tPKImageEncode_EncodeContent_Encode %d\n",cLine);
 	#endif
+	
     ERR err = WMP_errSuccess;
     U32 i = 0;
     
@@ -810,8 +812,9 @@ Cleanup: return err;
 
 ERR PKImageEncode_EncodeContent_Term(PKImageEncode* pIE) {
     #if 0
-    printf("\n\t\tPKImageEncode_EncodeContent_Term\n");
+    	printf("\n\t\tPKImageEncode_EncodeContent_Term\n");
 	#endif
+	
     ERR err = WMP_errSuccess;
     FailIf(ICERR_OK != ImageStrEncTerm(pIE->WMP.ctxSC), WMP_errFail);
 
@@ -821,8 +824,9 @@ Cleanup: return err;
 ERR PKImageEncode_EncodeContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 	U8* pbPixels, U32 cbStride) {
 	#if 0
-    printf("\tPKImageEncode_EncodeContent\n");
+    	printf("\tPKImageEncode_EncodeContent\n");
 	#endif
+	
     ERR err = WMP_errSuccess;
     size_t offPos = 0;
     
@@ -830,8 +834,8 @@ ERR PKImageEncode_EncodeContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
     pIE->WMP.nOffImage = (Long) offPos;
     
 	#if 0
-	CWMImageStrCodec* pSC = (CWMImageStrCodec*) pIE->WMP.ctxSC;
-	int const stride=16*16;
+		CWMImageStrCodec* pSC = (CWMImageStrCodec*) pIE->WMP.ctxSC;
+		int const stride=16*16;
 		int i,k;
 		int32_t* const transMB = pSC->transformedImage;
 		for (i=0;i<16;i++){
@@ -858,8 +862,9 @@ ERR PKImageEncode_TransformContent_Init(PKImageEncode* pIE, PKPixelInfo PI,
 	U32 cLine, U8* pbPixels, U32 cbStride) {
 	
 	#if 0
-    printf("\t\tPKImageEncode_TransformContent_Init %d\n",cLine);
+    	printf("\t\tPKImageEncode_TransformContent_Init %d\n",cLine);
     #endif
+	
     ERR err = WMP_errSuccess;
     
     // init codec
@@ -909,8 +914,9 @@ Cleanup: return err;
 ERR PKImageEncode_TransformContent_Trans(PKImageEncode* pIE, U32 cLine,
 	U8* pbPixels, U32 cbStride) {
 	#if 0
-    printf("\t\tPKImageEncode_TransformContent_Trans %d\n",cLine);
+    	printf("\t\tPKImageEncode_TransformContent_Trans %d\n",cLine);
 	#endif
+	
     ERR err = WMP_errSuccess;
     U32 i = 0;
     
@@ -937,8 +943,9 @@ Cleanup: return err;
 
 ERR PKImageEncode_TransformContent_Term(PKImageEncode* pIE) {
 	#if 0
-    printf("\n\t\tPKImageEncode_TransformContent_Term\n");
+    	printf("\n\t\tPKImageEncode_TransformContent_Term\n");
     #endif
+	
     ERR err = WMP_errSuccess;
 	FailIf(ICERR_OK != ImageStrEncTransTerm(pIE->WMP.ctxSC), WMP_errFail);
 
@@ -949,8 +956,9 @@ Cleanup: return err;
 ERR PKImageEncode_TransformContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 	U8* pbPixels, U32 cbStride) {
 	#if 0
-    printf("\tPKImageEncode_TransformContent\n");
+    	printf("\tPKImageEncode_TransformContent\n");
 	#endif
+	
     ERR err = WMP_errSuccess;
     size_t offPos = 0;
     
@@ -970,8 +978,9 @@ Cleanup: return err;
 ERR PKImageEncode_Transform_WMP(PKImageEncode* pIE, U32 cLine, U8* pbPixels, U32 cbStride)
 {	
 	#if 0
-	printf("PKImageEncode_Transform_WMP\n");
+		printf("PKImageEncode_Transform_WMP\n");
     #endif
+	
     ERR err = WMP_errSuccess;
     // U32 i = 0;
     PKPixelInfo PI;
@@ -1272,8 +1281,9 @@ Cleanup: return err;
 ERR PKImageEncode_WritePixels_WMP(PKImageEncode* pIE, U32 cLine, U8* pbPixels, U32 cbStride)
 {
 	#if 0
-    printf("\n\nPKImageEncode_WritePixels_WMP\n");
+    	printf("\n\nPKImageEncode_WritePixels_WMP\n");
 	#endif
+	
     ERR err = WMP_errSuccess;
     // U32 i = 0;
     PKPixelInfo PI;

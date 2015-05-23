@@ -113,8 +113,9 @@ Void encodeQPIndex(BitIOInfo* pIO, U8 iIndex, U8 cBits) {
 Int EncodeMacroblockDC(CWMImageStrCodec *pSC, CCodingContext *pContext,
 		Int iMBX, Int iMBY) {
 	#if 0
-    printf("DC ");
+    	printf("DC ");
 	#endif
+	
 	CWMITile * pTile = pSC->pTile + pSC->cTileColumn;
 	BitIOInfo* pIO = pContext->m_pIODC;
 	CWMIMBInfo *pMBInfo = &pSC->MBInfo;
@@ -147,9 +148,9 @@ Int EncodeMacroblockDC(CWMImageStrCodec *pSC, CCodingContext *pContext,
 			encodeQPIndex(pIO, pMBInfo->iQIndexHP, pTile->cBitsHP);
 	}
 
-	if (pSC->m_param.bTranscode == FALSE)
+	if (pSC->m_param.bTranscode == FALSE){
 		pSC->Quantize(pSC);
-
+	}
 	predMacroblockEnc(pSC);
 
 	/** code path for Y_ONLY, CMYK and N_CHANNEL DC **/
@@ -476,8 +477,9 @@ static Int AdaptiveScan(const PixelI *pCoeffs, Int *pResidual,
 Int EncodeMacroblockLowpass(CWMImageStrCodec *pSC, CCodingContext *pContext,
 		Int iMBX, Int iMBY) {
 	#if 0
-    printf("LP ");
+    	printf("LP ");
 	#endif
+	
 	const COLORFORMAT cf = pSC->m_param.cfColorFormat;
 	const Int iChannels = (Int) pSC->m_param.cNumChannels;
 	Int iFullChannels = (cf == YUV_420 || cf == YUV_422) ? 1 : iChannels;
@@ -1170,8 +1172,9 @@ static Void CodeCBP(CWMImageStrCodec * pSC, CCodingContext *pContext, Int iMBX,
 Int EncodeMacroblockHighpass(CWMImageStrCodec * pSC, CCodingContext *pContext,
 		Int iMBX, Int iMBY) {
 	#if 0
-    printf("HP\n");
+    	printf("HP\n");
 	#endif
+	
 	BitIOInfo* pIO = pContext->m_pIOAC;
 	BitIOInfo* pIOFL = pContext->m_pIOFL;
 

@@ -197,24 +197,23 @@ Void advanceMRPtr(CWMImageStrCodec* pSC) {
 	const int cpChroma = cblkChromas[cf] * 16;
     size_t i, j, jend = 0;//(pSC->m_pNextSC != NULL);
 
-		#if 0
-			int k;
-
-			printf("\np0MBbuffer\n");
-			for (i=0;i<16;i++){
-				for (k=0;k<16;k++){
-				printf("%d ",*(pSC->p0MBbuffer[0]+k+i*16));
-				}
-				printf("\n");
+	#if 0
+		int k;
+		printf("\np0MBbuffer\n");
+		for (i=0;i<16;i++){
+			for (k=0;k<16;k++){
+			printf("%d ",*(pSC->p0MBbuffer[0]+k+i*16));
 			}
-			printf("\np1MBbuffer\n");
-			for (i=0;i<16;i++){
-				for (k=0;k<16;k++){
-				printf("%d ",*(pSC->p1MBbuffer[0]+k+i*16));
-				}
-				printf("\n");
+			printf("\n");
+		}
+		printf("\np1MBbuffer\n");
+		for (i=0;i<16;i++){
+			for (k=0;k<16;k++){
+			printf("%d ",*(pSC->p1MBbuffer[0]+k+i*16));
 			}
-		#endif
+			printf("\n");
+		}
+	#endif
 
 	assert(pSC->m_bSecondary == FALSE);
 	for (j = 0; j <= jend; j++) {
@@ -228,6 +227,7 @@ Void advanceMRPtr(CWMImageStrCodec* pSC) {
 			
 			cpStride = cpChroma;
 		}
+		
 		#if 0
 			printf("\npPlane\n");
 			for (i=0;i<16;i++){
@@ -237,6 +237,7 @@ Void advanceMRPtr(CWMImageStrCodec* pSC) {
 				printf("\n");
 			}
 		#endif
+		
 		//pSC = pSC->m_pNextSC;
 	}
 }
@@ -986,7 +987,9 @@ Void putBit16z(BitIOInfo* pIO, U32 uiBits, U32 cBits) {
 
 	pIO->uiAccumulator = (pIO->uiAccumulator << cBits) | uiBits;
 	pIO->cBitsUsed += cBits;
-
+	
+	pIO->cBitsCounter += cBits; //YD added
+	
 	*(U16*) pIO->pbCurrent =
 			(U16) WRITESWAP_ENDIAN(pIO->uiAccumulator << (32 - pIO->cBitsUsed));
 
@@ -1078,6 +1081,8 @@ ERR attachISRead(BitIOInfo* pIO, struct WMPStream* pWS, CWMImageStrCodec* pSC) {
 	pIO->uiAccumulator = load4BE(pIO->pbStart);
 
 	pIO->cBitsUsed = 0;
+	pIO->cBitsCounter = 0;//YD added
+	
 	pIO->iMask = ~(PACKETLENGTH * 2);
 	pIO->iMask &= ~1;
 
@@ -1141,6 +1146,7 @@ ERR attachISWrite(BitIOInfo* pIO, struct WMPStream* pWS) {
 
 	pIO->uiAccumulator = 0;
 	pIO->cBitsUsed = 0;
+	pIO->cBitsCounter = 0;//YD added
 	pIO->iMask = ~(PACKETLENGTH * 2);
 
 	pIO->pWS = pWS;
