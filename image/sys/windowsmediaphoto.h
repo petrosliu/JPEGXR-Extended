@@ -409,7 +409,11 @@ typedef struct tagCWMIStrCodecParam {
 
 	// Perf measurement
 	Bool fMeasurePerf;
-	int32_t *transformedImage; //YD added
+	
+	//YD added
+	int32_t *transformedImage;
+	U32 cNumOfBits;
+	
 } CWMIStrCodecParam;
 
 typedef struct tagCWMImageBufferInfo {

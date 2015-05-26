@@ -225,6 +225,108 @@ Int writeTileHeaderHP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 	return ICERR_OK;
 }
 
+//YD added
+
+Int ctrlMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
+	CCodingContext * pContext = &pSC->m_pCodingContext[pSC->cTileColumn];
+	#if 0
+    	if(pSC->cColumn<3||pSC->cColumn>33) printf("\tcMB %d %d %d\n",iMBY,iMBX,pSC->cTileColumn);
+    #endif
+	
+	if (pSC->m_bCtxLeft && pSC->m_bCtxTop && pSC->m_bSecondary == FALSE
+		&& pSC->m_param.bTranscode == FALSE) { // write packet headers
+		U8 pID = (U8)((pSC->cTileRow * (pSC->WMISCP.cNumOfSliceMinus1V + 1)
+			+ pSC->cTileColumn) & 0x1F);
+
+		if (pSC->WMISCP.bfBitstreamFormat == SPATIAL) {
+			writePacketHeader(pContext->m_pIODC, 0, pID);
+			if (pSC->m_param.bTrimFlexbitsFlag)
+				putBit16(pContext->m_pIODC, pContext->m_iTrimFlexBits, 4);
+			writeTileHeaderDC(pSC, pContext->m_pIODC);
+			writeTileHeaderLP(pSC, pContext->m_pIODC);
+			writeTileHeaderHP(pSC, pContext->m_pIODC);
+		}
+		else {
+			writePacketHeader(pContext->m_pIODC, 1, pID);
+			writeTileHeaderDC(pSC, pContext->m_pIODC);
+			if (pSC->cSB > 1) {
+				writePacketHeader(pContext->m_pIOLP, 2, pID);
+				writeTileHeaderLP(pSC, pContext->m_pIOLP);
+			}
+			if (pSC->cSB > 2) {
+				writePacketHeader(pContext->m_pIOAC, 3, pID);
+				writeTileHeaderHP(pSC, pContext->m_pIOAC);
+			}
+			if (pSC->cSB > 3) {
+				writePacketHeader(pContext->m_pIOFL, 4, pID);
+				if (pSC->m_param.bTrimFlexbitsFlag)
+					putBit16(pContext->m_pIOFL, pContext->m_iTrimFlexBits, 4);
+			}
+		}
+	}
+
+    if (EncodeMacroblockDC(pSC, pContext, iMBX, iMBY) != ICERR_OK){
+        printf("error:EncodeMacroblockDC(pSC, pContext, iMBX, iMBY) != ICERR_OK\n");
+		return ICERR_ERROR;
+    }
+
+    if (pSC->WMISCP.sbSubband != SB_DC_ONLY){
+        if (EncodeMacroblockLowpass(pSC, pContext, iMBX, iMBY) != ICERR_OK){
+            printf("error:EncodeMacroblockLowpass(pSC, pContext, iMBX, iMBY) != ICERR_OK\n");
+		return ICERR_ERROR;
+        }
+    }
+
+	if (pSC->WMISCP.sbSubband != SB_DC_ONLY
+        && pSC->WMISCP.sbSubband != SB_NO_HIGHPASS){
+        if (EncodeMacroblockHighpass(pSC, pContext, iMBX, iMBY) != ICERR_OK){
+            printf("error:EncodeMacroblockHighpass(pSC, pContext, iMBX, iMBY) != ICERR_OK\n");
+		return ICERR_ERROR;
+        }
+    }
+	
+	if (iMBX + 1 == (int)pSC->cmbWidth
+		&& (iMBY + 1 == (int)pSC->cmbHeight
+		|| (pSC->cTileRow < pSC->WMISCP.cNumOfSliceMinus1H
+		&& iMBY
+		== (int)pSC->WMISCP.uiTileY[pSC->cTileRow
+		+ 1] - 1))) { // end of a horizontal slice
+		size_t k, l;
+
+		// get sizes of each packet and update index table
+		if (pSC->m_pNextSC == NULL || pSC->m_bSecondary ||1) {//YD
+			for (k = 0; k < pSC->cNumBitIO; k++) {
+				fillToByte(pSC->m_ppBitIO[k]);
+				pSC->ppWStream[k]->GetPos(pSC->ppWStream[k], &l);
+				pSC->pIndexTable[pSC->cNumBitIO * pSC->cTileRow + k] = l
+					+ getSizeWrite(pSC->m_ppBitIO[k]); // offset
+			}
+		}
+
+		// reset coding contexts
+		if (iMBY + 1 != (int)pSC->cmbHeight) {
+			for (k = 0; k <= pSC->WMISCP.cNumOfSliceMinus1V; k++)
+				ResetCodingContextEnc(&pSC->m_pCodingContext[k]);
+		}
+	}
+	
+	#if 0 //YD added
+	int k;
+	for (k = 0; k < pSC->cNumBitIO; k++) {
+		printf("%d ",pSC->m_ppBitIO[k]->cBitsUsed);
+	}
+	for (k = 0; k < pSC->cNumBitIO; k++) {
+		printf("%d ",pSC->m_ppBitIO[k]->cBitsCounter);
+	}
+	printf("\n");
+	#endif
+	
+	
+	return ICERR_OK;
+}
+
+
+
 Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 	CCodingContext * pContext = &pSC->m_pCodingContext[pSC->cTileColumn];
 	#if 0
@@ -380,6 +482,58 @@ Int transformMB(CWMImageStrCodec *pSC) {
     return ICERR_OK;
 }
 // end of zx addition
+
+// YD added
+
+Int controlMacroblock(CWMImageStrCodec *pSC) {
+	#if 1
+    	if(pSC->cColumn<3||pSC->cColumn>33) 
+			printf("conMB %d %d/%d\n",pSC->cRow,pSC->cColumn,pSC->cmbWidth);
+    #endif
+	
+	Bool topORleft = (pSC->cColumn == 0 || pSC->cRow == 0);
+    ERR_CODE result = ICERR_OK;
+    size_t j, jend = (pSC->m_pNextSC != NULL);
+    
+    for (j = 0; j <= jend; j++) {
+		
+        //transformMacroblock(pSC);
+        if (!topORleft) {
+			
+			int const stride=16*16;
+			PixelI* const p = pSC->pPlane[0];
+			int32_t* const transMB = pSC->transformedImage+(pSC->cRow * (pSC->cmbWidth+1) + pSC->cColumn)*stride;
+			memcpy(p,transMB,stride*sizeof(PixelI));//YD added
+			
+			#if 0
+				int i,k;
+				for (i=0;i<16;i++){
+					for (k=0;k<16;k++){
+					printf("%d ",*(pSC->pPlane[0]+k+i*16));
+					}
+					printf("\n");
+				}
+			#endif
+		
+            getTilePos(pSC, (Int) pSC->cColumn - 1, (Int) pSC->cRow - 1);
+            if (jend) {
+                pSC->m_pNextSC->cTileRow = pSC->cTileRow;
+                pSC->m_pNextSC->cTileColumn = pSC->cTileColumn;
+            }
+            if ((result = ctrlMB(pSC, (Int) pSC->cColumn - 1,
+                                   (Int) pSC->cRow - 1)) != ICERR_OK)
+                return result;
+        }
+        
+        if (jend) {
+            pSC->m_pNextSC->cRow = pSC->cRow;
+            pSC->m_pNextSC->cColumn = pSC->cColumn;
+            pSC = pSC->m_pNextSC;
+        }
+    }
+    
+    return ICERR_OK;
+}
 
 Int processMacroblock(CWMImageStrCodec *pSC) {
 	#if 0
@@ -808,6 +962,17 @@ Int StrIOEncTerm(CWMImageStrCodec* pSC) {
 	writeIndexTable(pSC); // write index table to the header
 
 	detachISWrite(pSC, pIO);
+
+	#if 0 //YD bit counter result
+	int k,c=0;
+	printf("DC LP AC FL\n");
+	for (k = 0; k < pSC->cNumBitIO; k++) {
+		c += pSC->m_ppBitIO[k]->cBitsCounter;
+		printf("%d ",pSC->m_ppBitIO[k]->cBitsCounter/8);
+	}
+	printf("\nSum: %d\n", c/8);
+	printf("Header %d\n",pSC->pIOHeader->cBitsCounter/8);
+	#endif
 
 	if (pSC->cNumBitIO > 0) {
 		size_t i, j, k, l;
@@ -1811,9 +1976,295 @@ Int ImageStrEncTransTerm(CTXSTRCODEC ctxSC) {
 
 //  end of zx addition for separate transform 
 
+//YD added for rate control
 
+/*************************************************************************
+Initialization of CWMImageStrCodec struct for rate control
+*************************************************************************/
+static Void InitializeStrEncCtrl(CWMImageStrCodec *pSC, const CWMImageInfo* pII,
+	const CWMIStrCodecParam *pSCP) {
 
+    pSC->cbStruct = sizeof(*pSC);
+	pSC->WMII = *pII;
+	pSC->WMISCP = *pSCP;
 
+    
+
+	// set nExpBias
+	if (pSC->WMISCP.nExpBias == 0)
+		pSC->WMISCP.nExpBias = 4 + 128; //default
+	pSC->WMISCP.nExpBias += 128; // rollover arithmetic
+
+	pSC->cRow = 0;
+	pSC->cColumn = 0;
+
+	pSC->cmbWidth = (pSC->WMII.cWidth + 15) / 16;
+	pSC->cmbHeight = (pSC->WMII.cHeight + 15) / 16;
+	//YD added
+	pSC->transformedImage = pSCP->transformedImage;
+	
+	#if 1
+    	printf("\t\t\t\tInitializeStrEncCtrl %d %d\n",pSC->cmbWidth,pSC->cmbHeight);
+    #endif
+	
+	pSC->Load = inputMBRow;
+	pSC->Quantize = quantizeMacroblock;
+
+	pSC->ProcessTopLeft = controlMacroblock;
+	pSC->ProcessTop = controlMacroblock;
+	pSC->ProcessTopRight = controlMacroblock;
+	pSC->ProcessLeft = controlMacroblock;
+	pSC->ProcessCenter = controlMacroblock;
+	pSC->ProcessRight = controlMacroblock;
+	pSC->ProcessBottomLeft = controlMacroblock;
+	pSC->ProcessBottom = controlMacroblock;
+	pSC->ProcessBottomRight = controlMacroblock;
+
+	pSC->m_pNextSC = NULL;
+	pSC->m_bSecondary = FALSE;
+}
+
+/*************************************************************************
+Streaming API init for rate control
+*************************************************************************/
+Int ImageStrEncCtrlInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
+	CTXSTRCODEC* pctxSC, CTXSTRCODEC* pctxSCrc) {
+	#if 1
+		printf("\t\t\tImageStrEncCtrlInit\n");
+    #endif
+	
+    static size_t cbChannels[BD_MAX] = { 2, 4 };
+    
+    size_t cbChannel = 0, cblkChroma = 0, i;
+    size_t cbMacBlockStride = 0, cbMacBlockChroma = 0, cMacBlock = 0;
+    
+    CWMImageStrCodec* pSC = NULL, *pNextSC = NULL;
+	//YD added
+	CWMImageStrCodec* pSC0 = *pctxSC;
+    char* pb = NULL;
+    size_t cb = 0;
+    Bool b32bit = sizeof(size_t) == 4;
+    
+    Int err;
+    
+    if (ValidateArgs(pII, pSCP) != ICERR_OK) {
+        goto ErrorExit;
+    }
+
+    //================================================
+    //*pctxSC = NULL;
+    
+    //================================================
+    cbChannel = cbChannels[pSCP->bdBitDepth];
+    cblkChroma = cblkChromas[pSCP->cfColorFormat];
+    cbMacBlockStride = cbChannel * 16 * 16;
+    cbMacBlockChroma = cbChannel * 16 * cblkChroma;
+    cMacBlock = (pII->cWidth + 15) / 16;
+    
+    //================================================
+    cb = sizeof(*pSC) + (128 - 1) + (PACKETLENGTH * 4 - 1) + (PACKETLENGTH * 2)
+    + sizeof(*pSC->pIOHeader);
+    i = cbMacBlockStride + cbMacBlockChroma * (pSCP->cChannel - 1);
+    if (b32bit) // integer overlow/underflow check for 32-bit system
+        if (((cMacBlock >> 15) * i) & 0xffff0000)
+            return ICERR_ERROR;
+    i *= cMacBlock * 2;
+    cb += i;
+    
+    pb = malloc(cb);
+    if (NULL == pb) {
+        goto ErrorExit;
+    }
+    memset(pb, 0, cb);
+    
+    //================================================
+    pSC = (CWMImageStrCodec*) pb;
+    pb += sizeof(*pSC);
+    
+    // Set up perf timers
+    PERFTIMER_ONLY(pSC->m_fMeasurePerf = pSCP->fMeasurePerf);
+    PERFTIMER_NEW(pSC->m_fMeasurePerf, &pSC->m_ptEndToEndPerf);
+    PERFTIMER_NEW(pSC->m_fMeasurePerf, &pSC->m_ptEncDecPerf);
+    PERFTIMER_START(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
+    PERFTIMER_START(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+    PERFTIMER_COPYSTARTTIME(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf,
+                            pSC->m_ptEndToEndPerf);
+    
+    pSC->m_param.cfColorFormat = pSCP->cfColorFormat;
+    pSC->m_param.bAlphaChannel = (pSCP->uAlphaMode == 3);
+    pSC->m_param.cNumChannels = pSCP->cChannel;
+    pSC->m_param.cExtraPixelsTop = pSC->m_param.cExtraPixelsBottom =
+    pSC->m_param.cExtraPixelsLeft = pSC->m_param.cExtraPixelsRight = 0;
+    
+    pSC->cbChannel = cbChannel;
+    
+    pSC->m_param.bTranscode = pSC->bTileExtraction = FALSE;
+
+    //================================================
+    InitializeStrEncCtrl(pSC, pII, pSCP);
+    
+    //================================================
+    // 2 Macro Row buffers for each channel
+    pb = ALIGNUP(pb, 128);
+    for (i = 0; i < pSC->m_param.cNumChannels; i++) {
+        pSC->a0MBbuffer[i] = (PixelI*) pb;
+        pb += cbMacBlockStride * pSC->cmbWidth;
+        pSC->a1MBbuffer[i] = (PixelI*) pb;
+        pb += cbMacBlockStride * pSC->cmbWidth;
+        cbMacBlockStride = cbMacBlockChroma;
+    }
+    
+    //================================================
+    // lay 2 aligned IO buffers just below pIO struct
+    pb = (char*) ALIGNUP(pb, PACKETLENGTH * 4) + PACKETLENGTH * 2;
+    pSC->pIOHeader = (BitIOInfo*) pb;
+    
+    //================================================
+
+    err = StrEncInit(pSC);
+    if (ICERR_OK != err)
+        goto ErrorExit;
+    
+    pSC->m_pNextSC = pNextSC;
+	
+	//YD added
+	int const stride=16*16;
+	int const imageLength=(pSC0->cmbWidth+1)*(pSC0->cmbHeight+1)*stride;
+	pSC->transformedImage=(int32_t*)malloc(imageLength*sizeof(int32_t));
+	memcpy(pSC->transformedImage,pSC0->transformedImage,imageLength*sizeof(int32_t));
+
+    //YD end
+	//================================================
+    *pctxSCrc = (CTXSTRCODEC) pSC;
+    
+    //writeIndexTableNull(pSC);
+#if defined(WMP_OPT_SSE2) || defined(WMP_OPT_CC_ENC) || defined(WMP_OPT_TRFM_ENC)
+    StrEncOpt(pSC);
+#endif // OPT defined
+    PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+	
+    return ICERR_OK;
+    
+ErrorExit: return ICERR_ERROR;
+}
+
+/*************************************************************************
+Streaming API rate control
+*************************************************************************/
+Int ImageStrEncCtrl(CTXSTRCODEC ctxSC, const CWMImageBufferInfo* pBI) {
+    
+    CWMImageStrCodec* pSC = (CWMImageStrCodec*) ctxSC;
+    CWMImageStrCodec* pNextSC = pSC->m_pNextSC;
+    ImageDataProc ProcessLeft, ProcessCenter, ProcessRight;
+    
+	#if 1
+    	printf("\n\n\t\t\tImageStrEncCtrl %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
+    #endif
+	
+    if (sizeof(*pSC) != pSC->cbStruct) {
+        return ICERR_ERROR;
+    }
+    
+    //================================
+    PERFTIMER_START(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+    
+    pSC->WMIBI = *pBI;
+    pSC->cColumn = 0;
+    initMRPtr(pSC);
+	
+    if (pNextSC)
+        pNextSC->WMIBI = *pBI;
+    
+    if (0 == pSC->cRow) {
+        ProcessLeft = pSC->ProcessTopLeft;
+        ProcessCenter = pSC->ProcessTop;
+        ProcessRight = pSC->ProcessTopRight;
+    } else {
+        ProcessLeft = pSC->ProcessLeft;
+        ProcessCenter = pSC->ProcessCenter;
+        ProcessRight = pSC->ProcessRight;
+    }
+    
+    pSC->Load(pSC);
+    if (ProcessLeft(pSC) != ICERR_OK)
+        return ICERR_ERROR;
+    advanceMRPtr(pSC);
+    
+    //================================
+    for (pSC->cColumn = 1; pSC->cColumn < pSC->cmbWidth; ++pSC->cColumn) {
+        if (ProcessCenter(pSC) != ICERR_OK)
+            return ICERR_ERROR;
+        advanceMRPtr(pSC);
+    }
+
+    //================================
+    if (ProcessRight(pSC) != ICERR_OK)
+        return ICERR_ERROR;
+    if (pSC->cRow)
+        advanceOneMBRow(pSC);
+    
+    ++pSC->cRow;
+    swapMRPtr(pSC);
+    
+    PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+    return ICERR_OK;
+}
+
+/*************************************************************************
+Streaming API rate control term
+*************************************************************************/
+Int ImageStrEncCtrlTerm(CTXSTRCODEC ctxSC) {
+	// CWMImageStrCodec *pNextSC = pSC->m_pNextSC;
+    CWMImageStrCodec* pSC = (CWMImageStrCodec*) ctxSC;
+	
+	#if 1
+    	printf("\t\t\tImageStrEncCtrlTerm %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
+    #endif
+	
+    // CWMImageStrCodec *pNextSC = pSC->m_pNextSC;
+    
+    if (sizeof(*pSC) != pSC->cbStruct) {
+        return ICERR_ERROR;
+    }
+    
+    //================================
+    PERFTIMER_START(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+    pSC->cColumn = 0;
+    initMRPtr(pSC);
+
+    pSC->ProcessBottomLeft(pSC);
+    advanceMRPtr(pSC);
+    
+    //================================
+    for (pSC->cColumn = 1; pSC->cColumn < pSC->cmbWidth; ++pSC->cColumn) {
+
+		pSC->ProcessBottom(pSC);
+        advanceMRPtr(pSC);
+    }
+    
+    //================================
+
+	pSC->ProcessBottomRight(pSC);
+		
+    //================================
+    //StrEncTerm(pSC);
+    
+    PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+    PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
+    PERFTIMER_REPORT(pSC->m_fMeasurePerf, pSC);
+    PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+    PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
+    
+    //free(pSC);
+	pSC->cNumOfBits=0;
+	int k;
+	for (k = 0; k < pSC->cNumBitIO; k++) {
+		pSC->cNumOfBits += pSC->m_ppBitIO[k]->cBitsCounter;
+	}
+    return ICERR_OK;
+}
+
+//YD added end
 
 /*************************************************************************
 Initialization of CWMImageStrCodec struct for encoding
@@ -2094,18 +2545,7 @@ Int ImageStrEncTerm(CTXSTRCODEC ctxSC) {
     //================================
 
 	pSC->ProcessBottomRight(pSC);
-	
-	#if 1 //YD bit counter result
-	int k,c=0;
-	printf("DC LP AC FL\n");
-	for (k = 0; k < pSC->cNumBitIO; k++) {
-		c += pSC->m_ppBitIO[k]->cBitsCounter;
-		printf("%d ",pSC->m_ppBitIO[k]->cBitsCounter/8);
-	}
-	printf("\nSum: %d\n", c/8);
-	printf("Header %d\n",pSC->pIOHeader->cBitsCounter/8);
-	#endif
-	
+		
     //================================
     StrEncTerm(pSC);
     

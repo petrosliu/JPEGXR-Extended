@@ -474,10 +474,11 @@ extern "C" {
 			const DESCRIPTIVEMETADATA *pDescMetadata);
 
 
-		//CHANGE CHANGE CHANGE CHANGE CHANGE CHANGE CHANGE CHANGE 
+		//zx added
 		ERR(*Transform)(PKImageEncode*, U32, U8*, U32);
-		//CHANGE END CHANGE END CHANGE END CHANGE END CHANGE END 
-
+		//YD added 
+		ERR(*Ratecontrol)(PKImageEncode*, U32, U8*, U32);
+		
 		ERR(*WritePixels)(PKImageEncode*, U32, U8*, U32);
 		ERR(*WriteSource)(PKImageEncode*, PKFormatConverter*, PKRect*);
 
@@ -532,6 +533,7 @@ extern "C" {
 			CWMImageInfo wmiI;
 			CWMIStrCodecParam wmiSCP;
 			CTXSTRCODEC ctxSC;
+			CTXSTRCODEC ctxSCrc;
 			CWMImageInfo wmiI_Alpha;
 			CWMIStrCodecParam wmiSCP_Alpha;
 			CTXSTRCODEC ctxSC_Alpha;
@@ -569,11 +571,13 @@ extern "C" {
 	ERR PKImageEncode_SetDescriptiveMetadata(PKImageEncode *pIE,
 		const DESCRIPTIVEMETADATA *pDescMetadata);
 
-	//CHANGE CHANGE CHANGE CHANGE CHANGE CHANGE CHANGE 
+	//zx added 
 	ERR PKImageEncode_Transform(PKImageEncode* pIE, U32 cLine, U8* pbPixel,
 		U32 cbStride);
-	//CHANGE END CHANGE END CHANGE END CHANGE END CHANGE END  
-
+	//YD added  
+	ERR PKImageEncode_Ratecontrol(PKImageEncode* pIE, U32 cLine, U8* pbPixel,
+		U32 cbStride);
+		
 	ERR PKImageEncode_WritePixels(PKImageEncode* pIE, U32 cLine, U8* pbPixel,
 		U32 cbStride);
 	ERR PKImageEncode_CreateNewFrame(PKImageEncode* pIE, void* pvParam,

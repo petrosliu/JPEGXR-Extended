@@ -324,8 +324,10 @@ typedef struct CWMImageStrCodec {
 	/** core parameters **/
 	CCoreParameters m_param;
 
-	int32_t * transformedImage; //YD added
-
+	//YD added
+	int32_t * transformedImage;
+	U32 cNumOfBits;
+	
 	struct CWMDecoderParameters *m_Dparam; // this is specified thru pointer because the same set of parameters may be used by multiple image planes
 
 	U8 cSB;

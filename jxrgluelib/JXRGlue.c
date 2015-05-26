@@ -563,7 +563,7 @@ ERR PKImageEncode_SetDescriptiveMetadata(PKImageEncode *pIE,
 	return WMP_errNotYetImplemented;
 }
 
-//CHANGE CHANGE CHANGE CHANGE CHANGE CHANGE CHANGE 
+//zx added 
 ERR PKImageEncode_Transform(PKImageEncode* pIE, U32 cLine, U8* pbPixels,
 	U32 cbStride) {
 	UNREFERENCED_PARAMETER(pIE);
@@ -571,9 +571,16 @@ ERR PKImageEncode_Transform(PKImageEncode* pIE, U32 cLine, U8* pbPixels,
 	UNREFERENCED_PARAMETER(pbPixels);
 	UNREFERENCED_PARAMETER(cbStride);
 	return WMP_errAbstractMethod;
-}
-//CHANGE END CHANGE END CHANGE END CHANGE END CHANGE END 
+} 
 
+ERR PKImageEncode_Ratecontrol(PKImageEncode* pIE, U32 cLine, U8* pbPixels,
+	U32 cbStride) {
+	UNREFERENCED_PARAMETER(pIE);
+	UNREFERENCED_PARAMETER(cLine);
+	UNREFERENCED_PARAMETER(pbPixels);
+	UNREFERENCED_PARAMETER(cbStride);
+	return WMP_errAbstractMethod;
+} 
 
 ERR PKImageEncode_WritePixels(PKImageEncode* pIE, U32 cLine, U8* pbPixels,
 	U32 cbStride) {
@@ -641,8 +648,10 @@ ERR PKImageEncode_WriteSource(PKImageEncode* pIE, PKFormatConverter* pFC,
 	Call(PKAllocAligned((void **)&pb, cbStride * pRect->Height, 128));
 
 	Call(pFC->Copy(pFC, pRect, pb, cbStride));
-    //YL added
+    //YD added
     Call(pIE->Transform(pIE, pRect->Height, pb, cbStride));
+	Call(pIE->Ratecontrol(pIE, pRect->Height, pb, cbStride));
+	
 	Call(pIE->WritePixels(pIE, pRect->Height, pb, cbStride));
 
 Cleanup: PKFreeAligned((void **)&pb);
@@ -781,10 +790,10 @@ ERR PKImageEncode_Create(PKImageEncode** ppIE) {
 	pIE->SetDescriptiveMetadata = PKImageEncode_SetDescriptiveMetadata;
 
 
-	//CHANGE CHANGE CHANGE CHANGE CHANGE CHANGE 
+	//zx added 
 	pIE->Transform = PKImageEncode_Transform;
-	//CHANGE END CHANGE END CHANGE END CHANGE END
-
+	//YD added
+	pIE->Ratecontrol = PKImageEncode_Ratecontrol;
 
 	pIE->WritePixels = PKImageEncode_WritePixels;
 	//    pIE->WriteSource = PKImageEncode_WriteSource;
