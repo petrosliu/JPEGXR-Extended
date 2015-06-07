@@ -42,6 +42,7 @@ typedef struct tagWMPENCAPPARGS {
 
 	CWMIStrCodecParam wmiSCP;
 	float fltImageQuality;
+	float fltImageCRatio;
 	Bool bOverlapSet;
 	Bool bColorFormatSet;
 } WMPENCAPPARGS;
@@ -58,6 +59,8 @@ void ARGInputInit(ARGInputs* pMyArgs)
 	pMyArgs->wid 		= 0;
 	pMyArgs->isFloat 	= 0;//default to float input
 	pMyArgs->quant		= 1;//lossless default
+	//YD added
+	pMyArgs->rate		= (float) pMyArgs->bpi;
 	/* i\o */
 	pMyArgs->inputFile  = setNulls; 
 	pMyArgs->outputFile = NULL; 
@@ -133,6 +136,11 @@ void WmpEncAppInitDefaultArgs(WMPENCAPPARGS* args) {
 	args->wmiSCP.uiDefaultQPIndexAlpha = 1;
 
 	args->fltImageQuality = 1.f;
+	
+	//YD added
+	args->wmiSCP.fltCRatio = 1.0;
+	args->fltImageCRatio = 1.0;
+	
 	args->bOverlapSet = 0;
 	args->bColorFormatSet = 0;
 }
@@ -235,6 +243,13 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 			case 'o':
 				args->szOutputFile = argv[i];
 				pMyArgs->outputFile = argv[i];
+				break;
+			//YD added for rate control parameter assignment
+			case 'r':
+				pMyArgs->rate = (float) atof(argv[i]);
+				if (pMyArgs->rate < 0.f
+						|| pMyArgs->rate > 32.f)
+					Call(WMP_errInvalidArgument);
 				break;
 
 			case 'q': {
@@ -418,6 +433,10 @@ ERR connectWmpEncAppArgsAndARGInputs(WMPENCAPPARGS* args, ARGInputs* pMyArgs)
 	args->wmiSCP.uiDefaultQPIndex = pMyArgs->quant;
 	args->fltImageQuality = pMyArgs->quant;
 	args->szInputFile = pMyArgs->inputFile;
+	//YD added
+	args->fltImageCRatio = ((float)pMyArgs->bpi/pMyArgs->rate>1)?
+							(float)pMyArgs->bpi/pMyArgs->rate:
+							1.0;
 	//printf("pMyArgs output file is %d\n",pMyArgs->outputFile);
 	if(pMyArgs->outputFile != NULL && pMyArgs->outputFile != '\0')
 	{
@@ -504,7 +523,7 @@ main(int argc, char* argv[]) {
 	if (args.wmiSCP.bVerbose) {
 		WmpEncAppShowArgs(&args);
 	}
-
+	
 	Call(PKCreateFactory(&pFactory, PK_SDK_VERSION));
 	Call(
 			pFactory->CreateStreamFromFilename(&pEncodeStream, args.szOutputFile, "wb"));
@@ -639,6 +658,7 @@ main(int argc, char* argv[]) {
 			}
 		} else {
 			pEncoder->WMP.wmiSCP.uiDefaultQPIndex = (U8) args.fltImageQuality;
+			pEncoder->WMP.wmiSCP.fltCRatio = args.fltImageCRatio;
 		}
 
 		if (pEncoder->WMP.wmiSCP.uAlphaMode == 2)

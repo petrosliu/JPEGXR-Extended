@@ -486,7 +486,7 @@ Int transformMB(CWMImageStrCodec *pSC) {
 // YD added
 
 Int controlMacroblock(CWMImageStrCodec *pSC) {
-	#if 1
+	#if 0
     	if(pSC->cColumn<3||pSC->cColumn>33) 
 			printf("conMB %d %d/%d\n",pSC->cRow,pSC->cColumn,pSC->cmbWidth);
     #endif
@@ -2003,7 +2003,7 @@ static Void InitializeStrEncCtrl(CWMImageStrCodec *pSC, const CWMImageInfo* pII,
 	//YD added
 	pSC->transformedImage = pSCP->transformedImage;
 	
-	#if 1
+	#if 0
     	printf("\t\t\t\tInitializeStrEncCtrl %d %d\n",pSC->cmbWidth,pSC->cmbHeight);
     #endif
 	
@@ -2029,7 +2029,7 @@ Streaming API init for rate control
 *************************************************************************/
 Int ImageStrEncCtrlInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	CTXSTRCODEC* pctxSC, CTXSTRCODEC* pctxSCrc) {
-	#if 1
+	#if 0
 		printf("\t\t\tImageStrEncCtrlInit\n");
     #endif
 	
@@ -2157,7 +2157,7 @@ Int ImageStrEncCtrl(CTXSTRCODEC ctxSC, const CWMImageBufferInfo* pBI) {
     CWMImageStrCodec* pNextSC = pSC->m_pNextSC;
     ImageDataProc ProcessLeft, ProcessCenter, ProcessRight;
     
-	#if 1
+	#if 0
     	printf("\n\n\t\t\tImageStrEncCtrl %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
     #endif
 	
@@ -2217,7 +2217,7 @@ Int ImageStrEncCtrlTerm(CTXSTRCODEC ctxSC) {
 	// CWMImageStrCodec *pNextSC = pSC->m_pNextSC;
     CWMImageStrCodec* pSC = (CWMImageStrCodec*) ctxSC;
 	
-	#if 1
+	#if 0
     	printf("\t\t\tImageStrEncCtrlTerm %d %d %d\n",pSC->cRow,pSC->cmbWidth,sizeof(*pSC));
     #endif
 	

@@ -71,6 +71,7 @@ extern "C" {
 		char* outputFile;
 		int quant;
 		double stepSize;
+		float rate;
 	} ARGInputs;
 
 	//================================================================

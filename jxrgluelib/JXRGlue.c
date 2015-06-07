@@ -650,7 +650,10 @@ ERR PKImageEncode_WriteSource(PKImageEncode* pIE, PKFormatConverter* pFC,
 	Call(pFC->Copy(pFC, pRect, pb, cbStride));
     //YD added
     Call(pIE->Transform(pIE, pRect->Height, pb, cbStride));
-	Call(pIE->Ratecontrol(pIE, pRect->Height, pb, cbStride));
+	
+	if (pIE->WMP.wmiSCP.fltCRatio != 1.0){
+		Call(pIE->Ratecontrol(pIE, pRect->Height, pb, cbStride));
+	}
 	
 	Call(pIE->WritePixels(pIE, pRect->Height, pb, cbStride));
 

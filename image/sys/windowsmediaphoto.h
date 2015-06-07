@@ -374,6 +374,8 @@ typedef struct tagCWMIStrCodecParam {
 	U8 uiDefaultQPIndexVLP;
 	U8 uiDefaultQPIndexVHP;
 	U8 uiDefaultQPIndexAlpha;
+	//YD added
+	float fltCRatio;
 
 	COLORFORMAT cfColorFormat;
 	BITDEPTH bdBitDepth;
