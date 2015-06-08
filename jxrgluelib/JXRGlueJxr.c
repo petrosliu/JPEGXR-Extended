@@ -29,6 +29,7 @@
 #include <JXRGlue.h>
 
 #include "strcodec.h"
+#include "strRateControl.h"
 
 static const char szHDPhotoFormat[] =
 "<dc:format>image/vnd.ms-photo</dc:format>";
@@ -953,6 +954,7 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
     	printf("\tPKImageEncode_ControlContent %.2f\n",pIE->WMP.wmiSCP.fltCRatio);
 	#endif
 	
+
     ERR err = WMP_errSuccess;
 
 	const U32 *pNumOfBits = &(pIE->WMP.wmiSCP.cNumOfBits);
@@ -961,87 +963,103 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 	const U32 rawNumofBits = pIE->WMP.wmiI.cWidth
 							* pIE->WMP.wmiI.cHeight
 							* pIE->WMP.wmiI.cBitsPerUnit;
-	const float thshd=0.10;
-	int qpl=1,qpc=100,qptmp;
+	const float thshd = 0.05 * crt;
+	const int qp1 = 1, qp2 = 50;
+	int qptmp,qpf=1;
 	float crtmp;
+	QPCRNode * head = (QPCRNode*)malloc(sizeof(QPCRNode));
+	QPCRNode * curr, *last;
 	
-	pIE->WMP.wmiSCP.uiDefaultQPIndex = 1;
+	pIE->WMP.wmiSCP.uiDefaultQPIndex = qp1;
 	Call(PKImageEncode_ControlContent_Init(pIE, PI, cLine, pbPixels, cbStride));
 	Call(PKImageEncode_ControlContent_Ctrl(pIE, cLine, pbPixels, cbStride));
     Call(PKImageEncode_ControlContent_Term(pIE));
 	const U32 losslessNumofBits = (*pNumOfBits);
-	float crl = (float) rawNumofBits / (float) losslessNumofBits;
-	float crll = crl;
+	crtmp = (float) rawNumofBits / (float) losslessNumofBits;
 	
-	#if 1
-		printf("%d %.2f ",qpl,crl);
+	head->qp= qp1;
+	head->cr=crtmp;
+	head->prev=NULL;
+	head->next=NULL;
+	
+	#if 0
+		printf("%d\t%.2f\t",qpl,crl);
 	#endif
 	
-	if (crl-crt >= -thshd){
-		if (crt<=crl){
-			pIE->WMP.wmiSCP.uiDefaultQPIndex = crl;
+	if (head->cr-crt >= 0){
+		if (crt<=head->cr){
+			qpf = head->cr;
 		}else{
-			pIE->WMP.wmiSCP.uiDefaultQPIndex = crl+1;
+			qpf = head->cr + 1;
 		}
 		free(pSC);
 		return err;
 	}
 	
-	pIE->WMP.wmiSCP.uiDefaultQPIndex = 100;
+	pIE->WMP.wmiSCP.uiDefaultQPIndex = qp2;
 	Call(PKImageEncode_ControlContent_Init(pIE, PI, cLine, pbPixels, cbStride));
 	Call(PKImageEncode_ControlContent_Ctrl(pIE, cLine, pbPixels, cbStride));
     Call(PKImageEncode_ControlContent_Term(pIE));	
-	float crc= (float) rawNumofBits / (float) (*pNumOfBits);
+	crtmp = (float) rawNumofBits / (float) (*pNumOfBits);
 	
-	#if 1
-		printf("%d %.2f\n",qpc,crc);
+	#if 0
+		printf("%d\t%.2f\n",qpc,crc);
 	#endif
 	
-	if (abs(crc-crt) <= thshd){
-		if (crt<=crc){
-			pIE->WMP.wmiSCP.uiDefaultQPIndex = crc;
+	curr = addQPCRNode(qp2,crtmp,head);
+	last = head;
+	
+	if (curr->cr-crt < thshd && curr->cr-crt >= 0){
+		if (crt<=curr->cr){
+			qpf = curr->cr;
 		}else{
-			pIE->WMP.wmiSCP.uiDefaultQPIndex = crc + 1;
+			qpf = curr->cr + 1;
 		}
 		free(pSC);
 		return err;
 	}
 	
-	while (qpc!=qpl && (crc-crt > thshd || crc-crt < -thshd)){
-		qptmp=(int)((qpc-qpl)/(crc-crl)*(crt-crl)+qpl+0.5);
+	while (curr->qp!=last->qp && (curr->cr-crt > thshd||curr->cr-crt < 0)){
+		qptmp=(int)((curr->qp-last->qp)/(curr->cr-last->cr)*(crt-last->cr)+last->qp+0.5);
 		if (qptmp>255) qptmp=255;
 		else if (qptmp<1) qptmp=1;
-		qpl=qpc; qpc=qptmp; crl=crc;
 		
-		pIE->WMP.wmiSCP.uiDefaultQPIndex = qpc;
+		if(isQPCRNodeinList(qptmp,head)){
+			curr=findQPCRNodeinList(qptmp,head);
+			break;
+		}
+		
+		pIE->WMP.wmiSCP.uiDefaultQPIndex = qptmp;
 		Call(PKImageEncode_ControlContent_Init(pIE, PI, cLine, pbPixels, cbStride));
 		Call(PKImageEncode_ControlContent_Ctrl(pIE, cLine, pbPixels, cbStride));
     	Call(PKImageEncode_ControlContent_Term(pIE));
+		crtmp = (float)rawNumofBits/(float)(*pNumOfBits);
 		
-		crc=(float)rawNumofBits/(float)(*pNumOfBits);
-		
-		#if 1
-			printf("%d %.2f %d %.2f\n",qpl,crl,qpc,crc);
+		#if 0
+			printf("%d\t%.2f\t%d\t%.2f\t",qpl,crl,qpc,crc);
 		#endif
 		
-		if(abs(qpc-qpl)<=1&&(crt<=crc&&crt>=crl||crt>=crc&&crt<=crl)){
-			if(qpc>=qpl) break;
-			else{
-				qptmp=qpc;qpc=qpl;qpl=qptmp;
-				crtmp=crc;crc=crl;crl=crtmp;
-				break;
-			}	
-		}
+		curr = addQPCRNode(qptmp,crtmp,head);
+		last = searchQPCRNode(crt, curr, head);
+		printf("%d\t%.2f\t%d\t%.2f\n",last->qp,last->cr,curr->qp,curr->cr);
+		
+		if(abs(curr->qp-last->qp)<=1&&(crt<=curr->cr&&crt>=last->cr||crt>=curr->cr&&crt<=last->cr))
+			break;
 	}
 	
-	if (crt<=crc){
-		pIE->WMP.wmiSCP.uiDefaultQPIndex = qpc;
+	if (crt<=curr->cr){
+		qpf = curr->qp;
 	}else{
-		pIE->WMP.wmiSCP.uiDefaultQPIndex = qpc + 1;
+		qpf = curr->qp + 1;
 	}
-
+	
+	if (qpf>255) qpf=255;
+	else if (qpf<1) qpf=1;
+	pIE->WMP.wmiSCP.uiDefaultQPIndex=qpf;
+	
+	printQPCRList(curr,head);
 	#if 1
-		printf("crt %.2f crc %.2f qpc %d qpf %d\n",crt,crc,qpc,pIE->WMP.wmiSCP.uiDefaultQPIndex);
+		printf("crt %.2f crc %.2f qpc %d qpf %d\n",crt,curr->cr,curr->qp,pIE->WMP.wmiSCP.uiDefaultQPIndex);
 	#endif
 	free(pSC);
     

@@ -247,8 +247,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 			//YD added for rate control parameter assignment
 			case 'r':
 				pMyArgs->rate = (float) atof(argv[i]);
-				if (pMyArgs->rate < 0.f
-						|| pMyArgs->rate > 32.f)
+				if (pMyArgs->rate <= 0.f)
 					Call(WMP_errInvalidArgument);
 				break;
 
@@ -434,7 +433,7 @@ ERR connectWmpEncAppArgsAndARGInputs(WMPENCAPPARGS* args, ARGInputs* pMyArgs)
 	args->fltImageQuality = pMyArgs->quant;
 	args->szInputFile = pMyArgs->inputFile;
 	//YD added
-	args->fltImageCRatio = ((float)pMyArgs->bpi/pMyArgs->rate>1)?
+	args->fltImageCRatio = ((float)pMyArgs->bpi/pMyArgs->rate>1.0)?
 							(float)pMyArgs->bpi/pMyArgs->rate:
 							1.0;
 	//printf("pMyArgs output file is %d\n",pMyArgs->outputFile);
