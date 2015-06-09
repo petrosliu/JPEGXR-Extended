@@ -198,6 +198,8 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 	int i = 1, j = 0, k;
 	char c;
 	int idxPF = -1;
+	//YD added
+	int idxQR = -1; // 0 quantize 1 rate 2 ratio
 
 	WmpEncAppInitDefaultArgs(args);
 				char *actualPath;
@@ -245,18 +247,39 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				pMyArgs->outputFile = argv[i];
 				break;
 			//YD added for rate control parameter assignment
-			case 'r':
-				pMyArgs->rate = (float) atof(argv[i]);
-				if (pMyArgs->rate <= 0.f)
-					Call(WMP_errInvalidArgument);
+			case 'r': {
+				if(idxQR == -1){
+					pMyArgs->rate = (float) atof(argv[i]);
+					if (pMyArgs->rate <= 0.f)
+						Call(WMP_errInvalidArgument);
+					args->fltImageQuality = (float) 255;
+					pMyArgs->quant = (unsigned char) 255;
+					idxQR = 1;
+				}else Call(WMP_errInvalidArgument);
+			}
+				break;
+				
+			case 'R': {
+				if(idxQR == -1){
+					pMyArgs->rate = (float) atof(argv[i]);
+					if (pMyArgs->rate <= 0.f)
+						Call(WMP_errInvalidArgument);
+					args->fltImageQuality = (float) 255;
+					pMyArgs->quant = (unsigned char) 255;
+					idxQR = 2;
+				}else Call(WMP_errInvalidArgument);
+			}
 				break;
 
 			case 'q': {
-				args->fltImageQuality = (float) atof(argv[i]);
-				pMyArgs->quant = (unsigned char) atoi(argv[i]);
-				if (args->fltImageQuality < 0.f
-						|| args->fltImageQuality > 255.f)
-					Call(WMP_errInvalidArgument);
+				if(idxQR == -1){
+					args->fltImageQuality = (float) atof(argv[i]);
+					pMyArgs->quant = (unsigned char) atoi(argv[i]);
+					if (args->fltImageQuality < 0.f
+							|| args->fltImageQuality > 255.f)
+						Call(WMP_errInvalidArgument);
+					idxQR = 0;
+				} else Call(WMP_errInvalidArgument);
 			}
 				break;
 
@@ -379,8 +402,10 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 	}
 	/* rabih edit: this calls the convert2int function which updates the args->szInputFile, and pMyArgs->inputFile*/
 	//if(pMyArgs->isFloat)
-	//	convert2int(&args,pMyArgs);		
+	//	convert2int(&args,pMyArgs);	
 	
+	//YD added	
+	if(idxQR == 2) pMyArgs->rate = (float) pMyArgs->bpi / pMyArgs->rate;
 
 	FailIf((int) sizeof2(pixelFormat) <= idxPF, WMP_errUnsupportedFormat);
 	if (idxPF >= 0)
@@ -429,13 +454,16 @@ ERR connectWmpEncAppArgsAndARGInputs(WMPENCAPPARGS* args, ARGInputs* pMyArgs)
 			break;
 	}
 	args->wmiSCP.bfBitstreamFormat = FREQUENCY; //says it on tif original
-	args->wmiSCP.uiDefaultQPIndex = pMyArgs->quant;
-	args->fltImageQuality = pMyArgs->quant;
+
 	args->szInputFile = pMyArgs->inputFile;
 	//YD added
 	args->fltImageCRatio = ((float)pMyArgs->bpi/pMyArgs->rate>1.0)?
 							(float)pMyArgs->bpi/pMyArgs->rate:
 							1.0;
+							
+	args->wmiSCP.uiDefaultQPIndex = pMyArgs->quant;
+	args->fltImageQuality = pMyArgs->quant;
+
 	//printf("pMyArgs output file is %d\n",pMyArgs->outputFile);
 	if(pMyArgs->outputFile != NULL && pMyArgs->outputFile != '\0')
 	{

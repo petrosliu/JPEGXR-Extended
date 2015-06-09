@@ -1460,6 +1460,29 @@ Int StrEncInit(CWMImageStrCodec* pSC) {
 		WriteWMIHeader(pSC);
 	}
 
+#if 0
+	printf("uiDefaultQPIndex\t%d\n",pSC->WMISCP.uiDefaultQPIndex);
+	printf("uiDefaultQPIndexYLP\t%d\n",pSC->WMISCP.uiDefaultQPIndexYLP);
+	printf("uiDefaultQPIndexYHP\t%d\n",pSC->WMISCP.uiDefaultQPIndexYHP);
+	printf("uiDefaultQPIndexU\t%d\n",pSC->WMISCP.uiDefaultQPIndexU);
+	printf("uiDefaultQPIndexULP\t%d\n",pSC->WMISCP.uiDefaultQPIndexULP);
+	printf("uiDefaultQPIndexUHP\t%d\n",pSC->WMISCP.uiDefaultQPIndexUHP);
+	printf("uiDefaultQPIndexV\t%d\n",pSC->WMISCP.uiDefaultQPIndexV);
+	printf("uiDefaultQPIndexVLP\t%d\n",pSC->WMISCP.uiDefaultQPIndexVLP);
+	printf("uiDefaultQPIndexVHP\t%d\n",pSC->WMISCP.uiDefaultQPIndexVHP);
+	printf("uiDefaultQPIndexAlpha\t%d\n",pSC->WMISCP.uiDefaultQPIndexAlpha);
+	
+	printf("iQPIndexY\t%d\n",iQPIndexY);
+	printf("iQPIndexYLP\t%d\n",iQPIndexYLP);
+	printf("iQPIndexYHP\t%d\n",iQPIndexYHP);
+	printf("iQPIndexU\t%d\n",iQPIndexU);
+	printf("iQPIndexULP\t%d\n",iQPIndexULP);
+	printf("iQPIndexUHP\t%d\n",iQPIndexUHP);
+	printf("iQPIndexV\t%d\n",iQPIndexV);
+	printf("iQPIndexVLP\t%d\n",iQPIndexVLP);
+	printf("iQPIndexVHP\t%d\n",iQPIndexVHP);
+#endif
+
 	return ICERR_OK;
 }
 
@@ -2545,7 +2568,7 @@ Int ImageStrEncTerm(CTXSTRCODEC ctxSC) {
     //================================
 
 	pSC->ProcessBottomRight(pSC);
-		
+	
     //================================
     StrEncTerm(pSC);
     

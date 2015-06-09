@@ -43,8 +43,8 @@ echo Making files
 make
 
 echo =====================
-echo Runing JxrEncApp -L 16 -q 1 -i wavefield1_16b -h 560 -w 576 -o out.jxr -r 16
-./JxrEncApp -L 16 -q 1 -i wavefield1_16b -h 560 -w 576 -o out.jxr -r 16 > scrn.txt
+echo Runing JxrEncApp -L 16 -i wavefield1_16b -h 560 -w 576 -o out.jxr -R 10
+./JxrEncApp -L 16 -i wavefield1_16b -h 560 -w 576 -o out.jxr -R 10  > scrn.txt
 
 echo 
 echo =====================
