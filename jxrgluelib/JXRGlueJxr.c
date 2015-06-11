@@ -838,7 +838,7 @@ ERR PKImageEncode_EncodeContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 		CWMImageStrCodec* pSC = (CWMImageStrCodec*) pIE->WMP.ctxSC;
 		int const stride=16*16;
 		int i,k;
-		int32_t* const transMB = pSC->transformedImage;
+		int32_t* const transMB = pSC->pTransformedImage;
 		for (i=0;i<16;i++){
 			for (k=0;k<16;k++){
 			printf("%d ",*(transMB+k+i*16));
@@ -977,13 +977,12 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 	const U32 rawNumofBits = pIE->WMP.wmiI.cWidth
 							* pIE->WMP.wmiI.cHeight
 							* pIE->WMP.wmiI.cBitsPerUnit;	
-	const float tol = 0.05 * crt;
-	int qpf = 1;
-	float crtmp;
+	const float tol = (1 / (1 - 0.05) - 1) * crt;
 	
 	Call(PKImageEncode_ControlContent_Suit(1, pIE, PI, cLine, pbPixels, cbStride));
+	
 	const U32 losslessNumofBits = (*pNumOfBits);
-	crtmp = (float) rawNumofBits / (float) losslessNumofBits;
+	float crtmp = (float) rawNumofBits / (float) losslessNumofBits;
 	
 	QPCRNode * head = addQPCRNodeinList(1,crtmp,NULL);
 	QPCRNode * curr = head;
@@ -1013,7 +1012,7 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 				crtmp = (float)rawNumofBits/(float)(*pNumOfBits);
 				
 				curr = addQPCRNodeinList(qptmp,crtmp,head);
-				last = searchQPCRNode(crt, curr, head);
+				last = getLastQPCRNode(crt, curr, head);
 				qptmp = generateNextQP(curr, last, crt);
 		#if 0
 				printf("%d\t%.2f\t%d\t%.2f\n",last->qp,last->cr,curr->qp,curr->cr);
@@ -1025,7 +1024,7 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 	}
 	*pQP=generateFinalQP(curr, crt);
 
-#if 1
+#ifdef RATECONTROL_TEST_YD 
 	printQPCRList(curr,head);
 	printf("crc\t%.2f\tcrt\t%.2f\nsizec\t%.0f\tsizet\t%.0f\nqpc\t%d\tqpf\t%d\tite\t%d\n",
 			curr->cr, crt,
@@ -1087,8 +1086,8 @@ ERR PKImageEncode_TransformContent_Init(PKImageEncode* pIE, PKPixelInfo PI,
     
     pIE->idxCurrentLine = 0;
     
-    pIE->WMP.wmiSCP.fMeasurePerf = TRUE;
-	pIE->WMP.wmiSCP.transformedImage = NULL;//YD added
+    pIE->WMP.wmiSCP.fMeasurePerf = TRUE; 
+	pIE->WMP.wmiSCP.pTransformedImage = NULL;//YD added
     FailIf(
            ICERR_OK != ImageStrEncTransInit(&pIE->WMP.wmiI, &pIE->WMP.wmiSCP, &pIE->WMP.ctxSC),
            WMP_errFail);

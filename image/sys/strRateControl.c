@@ -7,7 +7,10 @@
 
 #include "strRateControl.h"
 
-//for test only
+//*******************************************************************
+// Test functions
+//*******************************************************************
+
 void printQPCRList(QPCRNode* curr, QPCRNode* head){
 	QPCRNode* p = head;
 	printf("qp\tcr\n");
@@ -20,6 +23,23 @@ void printQPCRList(QPCRNode* curr, QPCRNode* head){
 	printf("EOL\n");
 }
 
+int countQPCRNode(QPCRNode* head){
+	if(head == NULL) return 0;
+	else{
+		int n = 1;
+		QPCRNode* p = head;
+		while(p->next != NULL){
+			p = p->next;
+			n++;
+		}
+		return n;
+	}
+}
+
+//*******************************************************************
+// Private Functions
+//*******************************************************************
+
 QPCRNode* createQPCRNode(int qp, float cr, QPCRNode* prev, QPCRNode* next){
 	QPCRNode* p = (QPCRNode*) malloc(sizeof(QPCRNode));
 	p->qp = qp;
@@ -29,8 +49,16 @@ QPCRNode* createQPCRNode(int qp, float cr, QPCRNode* prev, QPCRNode* next){
 	return p;
 }
 
+int generateSecondQP(QPCRNode* head, float crt){
+	//future work
+	return 100;
+}
+
+//*******************************************************************
+// Public Functions
+//*******************************************************************
+
 QPCRNode* addQPCRNodeinList(int qpc, float crc, QPCRNode* head){
-	
 	if(head == NULL) return createQPCRNode(qpc, crc, NULL, NULL);
 	else if(head->cr == crc) return head;
 	else{
@@ -71,7 +99,7 @@ QPCRNode* findQPCRNodeinList(int qp, QPCRNode* head){
 	return NULL;
 }
 
-QPCRNode* searchQPCRNode(float crt, QPCRNode* curr, QPCRNode* head){
+QPCRNode* getLastQPCRNode(float crt, QPCRNode* curr, QPCRNode* head){
 	QPCRNode* p;
 	if(!isQPCRNodeinList(curr->qp,head)){
 		p=addQPCRNodeinList(curr->qp,curr->cr,head);
@@ -110,24 +138,6 @@ void freeQPCRList(QPCRNode** phead){
 	}
 	free(p);
 	*phead = NULL;
-}
-
-int countQPCRNode(QPCRNode* head){
-	if(head == NULL) return 0;
-	else{
-		int n = 1;
-		QPCRNode* p = head;
-		while(p->next != NULL){
-			p = p->next;
-			n++;
-		}
-		return n;
-	}
-}
-
-int generateSecondQP(QPCRNode* head, float crt){
-	//future work
-	return 100;
 }
 
 int generateNextQP(QPCRNode* curr, QPCRNode* last, float crt){

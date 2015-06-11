@@ -42,7 +42,9 @@ typedef struct tagWMPENCAPPARGS {
 
 	CWMIStrCodecParam wmiSCP;
 	float fltImageQuality;
+	//YD add
 	float fltImageCRatio;
+	
 	Bool bOverlapSet;
 	Bool bColorFormatSet;
 } WMPENCAPPARGS;
@@ -209,7 +211,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 		switch ((c = argv[i][1])) {
 		/* the no-argument switches */
 		case 't':
-			// NOOP - now we always print timing info
+			//use #define DISABLE_PERF_MEASUREMENT or not
 			break;
 
 		case 'v':
@@ -684,9 +686,10 @@ main(int argc, char* argv[]) {
 						+ (float) (pQPs + 6)[5] * qf);
 			}
 		} else {
+			//YD added
 			pEncoder->WMP.wmiSCP.uiDefaultQPIndex = (U8) args.fltImageQuality;
 			pEncoder->WMP.wmiSCP.fltCRatio = args.fltImageCRatio;
-		}
+			}
 
 		if (pEncoder->WMP.wmiSCP.uAlphaMode == 2)
 			pEncoder->WMP.wmiSCP_Alpha.uiDefaultQPIndex =

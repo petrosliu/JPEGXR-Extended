@@ -39,7 +39,7 @@ DIR_GLUE=jxrgluelib
 DIR_TEST=jxrtestlib
 DIR_EXEC=jxrencoderdecoder
 
-CFLAGS=-I. -Icommon/include -I$(DIR_SYS) -D__ANSI__ -DDISABLE_PERF_MEASUREMENT -w -O
+CFLAGS=-I. -Icommon/include -I$(DIR_SYS) -D__ANSI__ -w -O
 ##
 ## Add following flag to CFLAGS above if target is a big endian machine
 ## -D_BIG__ENDIAN_

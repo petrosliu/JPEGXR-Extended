@@ -446,7 +446,7 @@ Int transformMB(CWMImageStrCodec *pSC) {
 			int const stride=16*16;
 			PixelI* const p = pSC->pPlane[0];
 			
-			int32_t* const transMB = pSC->transformedImage+(pSC->cRow * (pSC->cmbWidth+1) + pSC->cColumn)*stride;
+			int32_t* const transMB = pSC->pTransformedImage+(pSC->cRow * (pSC->cmbWidth+1) + pSC->cColumn)*stride;
 			memcpy(transMB,p,stride*sizeof(PixelI));//YD added
 		
 		#if 0
@@ -502,7 +502,7 @@ Int controlMacroblock(CWMImageStrCodec *pSC) {
 			
 			int const stride=16*16;
 			PixelI* const p = pSC->pPlane[0];
-			int32_t* const transMB = pSC->transformedImage+(pSC->cRow * (pSC->cmbWidth+1) + pSC->cColumn)*stride;
+			int32_t* const transMB = pSC->pTransformedImage+(pSC->cRow * (pSC->cmbWidth+1) + pSC->cColumn)*stride;
 			memcpy(p,transMB,stride*sizeof(PixelI));//YD added
 			
 			#if 0
@@ -552,7 +552,7 @@ Int processMacroblock(CWMImageStrCodec *pSC) {
 			
 			int const stride=16*16;
 			PixelI* const p = pSC->pPlane[0];
-			int32_t* const transMB = pSC->transformedImage+(pSC->cRow * (pSC->cmbWidth+1) + pSC->cColumn)*stride;
+			int32_t* const transMB = pSC->pTransformedImage+(pSC->cRow * (pSC->cmbWidth+1) + pSC->cColumn)*stride;
 			memcpy(p,transMB,stride*sizeof(PixelI));//YD added
 			
 			#if 0
@@ -1489,7 +1489,8 @@ Int StrEncInit(CWMImageStrCodec* pSC) {
 static Int StrEncTerm(CTXSTRCODEC ctxSC) {
 	CWMImageStrCodec* pSC = (CWMImageStrCodec*)ctxSC;
     size_t j, jend = 0;//(pSC->m_pNextSC != NULL);
-
+	//YD added
+	free(pSC->pTransformedImage);
 	for (j = 0; j <= jend; j++) {
 		if (sizeof(*pSC) != pSC->cbStruct) {
 			return ICERR_ERROR;
@@ -1745,8 +1746,6 @@ static Void InitializeStrEncTrans(CWMImageStrCodec *pSC, const CWMImageInfo* pII
 	pSC->cmbWidth = (pSC->WMII.cWidth + 15) / 16;
 	pSC->cmbHeight = (pSC->WMII.cHeight + 15) / 16;
 	
-	pSC->transformedImage = (int32_t*)malloc((pSC->cmbWidth+1)*(pSC->cmbHeight+1)*16*16*sizeof(int32_t));
-	
 	#if 0
     	printf("\t\t\t\tInitializeStrEncTrans %d %d\n",pSC->cmbWidth,pSC->cmbHeight);
     #endif
@@ -1826,7 +1825,7 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
     //================================================
     pSC = (CWMImageStrCodec*) pb;
     pb += sizeof(*pSC);
-    
+	
     // Set up perf timers
     PERFTIMER_ONLY(pSC->m_fMeasurePerf = pSCP->fMeasurePerf);
     PERFTIMER_NEW(pSC->m_fMeasurePerf, &pSC->m_ptEndToEndPerf);
@@ -1846,8 +1845,8 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
     
     pSC->m_param.bTranscode = pSC->bTileExtraction = FALSE;
 	//YD added
-	pSC->transformedImage = NULL;
-	pSCP->transformedImage = pSC->transformedImage;
+	pSC->pTransformedImage = NULL;
+	pSCP->pTransformedImage = pSC->pTransformedImage;
 	
     //================================================
     InitializeStrEncTrans(pSC, pII, pSCP);
@@ -1863,7 +1862,7 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
         cbMacBlockStride = cbMacBlockChroma;
     }
     
-    //================================================
+	//================================================
     // lay 2 aligned IO buffers just below pIO struct
     pb = (char*) ALIGNUP(pb, PACKETLENGTH * 4) + PACKETLENGTH * 2;
     pSC->pIOHeader = (BitIOInfo*) pb;
@@ -1875,6 +1874,10 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
         goto ErrorExit;
     
     pSC->m_pNextSC = pNextSC;
+	
+	//YD added
+	pSC->pTransformedImage = (int32_t*)malloc((pSC->cmbWidth+1)*(pSC->cmbHeight+1)*16*16*sizeof(int32_t));
+    
     //================================================
     *pctxSC = (CTXSTRCODEC) pSC;
     
@@ -1990,9 +1993,7 @@ Int ImageStrEncTransTerm(CTXSTRCODEC ctxSC) {
     PERFTIMER_REPORT(pSC->m_fMeasurePerf, pSC);
     PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
     PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
-
-
-		
+	
     //free(pSC);
 	return ICERR_OK;
 }
@@ -2023,8 +2024,6 @@ static Void InitializeStrEncCtrl(CWMImageStrCodec *pSC, const CWMImageInfo* pII,
 
 	pSC->cmbWidth = (pSC->WMII.cWidth + 15) / 16;
 	pSC->cmbHeight = (pSC->WMII.cHeight + 15) / 16;
-	//YD added
-	pSC->transformedImage = pSCP->transformedImage;
 	
 	#if 0
     	printf("\t\t\t\tInitializeStrEncCtrl %d %d\n",pSC->cmbWidth,pSC->cmbHeight);
@@ -2151,12 +2150,7 @@ Int ImageStrEncCtrlInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
     pSC->m_pNextSC = pNextSC;
 	
 	//YD added
-	int const stride=16*16;
-	int const imageLength=(pSC0->cmbWidth+1)*(pSC0->cmbHeight+1)*stride;
-	pSC->transformedImage=(int32_t*)malloc(imageLength*sizeof(int32_t));
-	memcpy(pSC->transformedImage,pSC0->transformedImage,imageLength*sizeof(int32_t));
-
-    //YD end
+	pSC->pTransformedImage = pSC0->pTransformedImage;
 	//================================================
     *pctxSCrc = (CTXSTRCODEC) pSC;
     
@@ -2311,8 +2305,6 @@ static Void InitializeStrEnc(CWMImageStrCodec *pSC, const CWMImageInfo* pII,
 
 	pSC->cmbWidth = (pSC->WMII.cWidth + 15) / 16;
 	pSC->cmbHeight = (pSC->WMII.cHeight + 15) / 16;
-	//YD added
-	pSC->transformedImage = pSCP->transformedImage;
 	
 	#if 0
     	printf("\t\t\t\tInitializeStrEnc %d %d\n",pSC->cmbWidth,pSC->cmbHeight);
@@ -2439,10 +2431,7 @@ Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
     pSC->m_pNextSC = pNextSC;
 	
 	//YD added
-	int const stride=16*16;
-	int const imageLength=(pSC0->cmbWidth+1)*(pSC0->cmbHeight+1)*stride;
-	pSC->transformedImage=(int32_t*)malloc(imageLength*sizeof(int32_t));
-	memcpy(pSC->transformedImage,pSC0->transformedImage,imageLength*sizeof(int32_t));
+	pSC->pTransformedImage = pSC0->pTransformedImage;
 	//clean pSC0
 	if (sizeof(*pSC0) != pSC->cbStruct)
 		return ICERR_ERROR;
@@ -2577,7 +2566,7 @@ Int ImageStrEncTerm(CTXSTRCODEC ctxSC) {
     PERFTIMER_REPORT(pSC->m_fMeasurePerf, pSC);
     PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
     PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
-    
+
     free(pSC);
     return ICERR_OK;
 }

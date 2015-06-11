@@ -22,20 +22,24 @@ typedef struct tagQPCRNode {
 	struct tagQPCRNode* next;
 } QPCRNode;
 
-void printQPCRList(QPCRNode* curr,QPCRNode* head);
+//#define RATECONTROL_TEST_YD
 
-QPCRNode* createQPCRNode(int qp, float cr, QPCRNode* prev, QPCRNode* next);
+#ifdef RATECONTROL_TEST_YD 
+void printQPCRList(QPCRNode* curr,QPCRNode* head);
+int countQPCRNode(QPCRNode* head);
+#endif
+
 QPCRNode* addQPCRNodeinList(int qpc, float crc, QPCRNode* head);
 
 int isQPCRNodeinList(int qp, QPCRNode* head);
+
 QPCRNode* findQPCRNodeinList(int qp, QPCRNode* head);
-QPCRNode* searchQPCRNode(float crt, QPCRNode* curr, QPCRNode* head);
+
+QPCRNode* getLastQPCRNode(float crt, QPCRNode* curr, QPCRNode* head);
 
 void freeQPCRList(QPCRNode** phead);
 
-int countQPCRNode(QPCRNode* head);
-
-int generateSecondQP(QPCRNode* head, float crt);
 int generateNextQP(QPCRNode* curr, QPCRNode* last, float crt);
+
 int generateFinalQP(QPCRNode* curr, float crt);
 #endif

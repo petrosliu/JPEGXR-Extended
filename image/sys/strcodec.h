@@ -325,7 +325,7 @@ typedef struct CWMImageStrCodec {
 	CCoreParameters m_param;
 
 	//YD added
-	int32_t * transformedImage;
+	int32_t * pTransformedImage;
 	U32 cNumOfBits;
 	
 	struct CWMDecoderParameters *m_Dparam; // this is specified thru pointer because the same set of parameters may be used by multiple image planes
@@ -463,6 +463,9 @@ typedef struct CWMImageStrCodec {
 	Bool m_fMeasurePerf;
 	struct PERFTIMERSTATE *m_ptEndToEndPerf; // Measures from Init to Term, including I/O
 	struct PERFTIMERSTATE *m_ptEncDecPerf; // Measures time spent in ImageStrEncEncode/ImageStrDecDecode, excluding I/O
+	struct PERFTIMERSTATE *m_ptTransPerf;
+	struct PERFTIMERSTATE *m_ptRatePerf;
+	struct PERFTIMERSTATE *m_ptCodePerf;
 #endif // DISABLE_PERF_MEASUREMENT
 	// postproc information for 2 MB rows: 0(previous row) 1(current row)
 	struct tagPostProcInfo * pPostProcInfo[MAX_CHANNELS][2];
