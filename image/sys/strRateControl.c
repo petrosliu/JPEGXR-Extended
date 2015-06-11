@@ -124,3 +124,21 @@ int countQPCRNode(QPCRNode* head){
 		return n;
 	}
 }
+
+int generateSecondQP(QPCRNode* head, float crt){
+	//future work
+	return 100;
+}
+
+int generateNextQP(QPCRNode* curr, QPCRNode* last, float crt){
+	if (last==NULL) return generateSecondQP(curr,crt);
+	int nextQP=(int)((curr->qp-last->qp)/(curr->cr-last->cr)*(crt-last->cr)+last->qp+0.5);
+	return (nextQP>255)?255:((nextQP<1)?1:nextQP);
+}
+
+int generateFinalQP(QPCRNode* curr, float crt){
+	int qpf = (crt<=curr->cr)?curr->qp:curr->qp + 1;
+	//qpf=(qpf>255)?255:((qpf<1)?1:qpf);
+	//printf("%.2f %d\n",crt,qpf);
+	return (qpf>255)?255:((qpf<1)?1:qpf);
+}

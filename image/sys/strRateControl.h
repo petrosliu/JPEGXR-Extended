@@ -35,4 +35,7 @@ void freeQPCRList(QPCRNode** phead);
 
 int countQPCRNode(QPCRNode* head);
 
+int generateSecondQP(QPCRNode* head, float crt);
+int generateNextQP(QPCRNode* curr, QPCRNode* last, float crt);
+int generateFinalQP(QPCRNode* curr, float crt);
 #endif
