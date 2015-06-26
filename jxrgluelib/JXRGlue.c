@@ -656,7 +656,6 @@ ERR PKImageEncode_WriteSource(PKImageEncode* pIE, PKFormatConverter* pFC,
 	}
 	
 	Call(pIE->WritePixels(pIE, pRect->Height, pb, cbStride));
-
 Cleanup: PKFreeAligned((void **)&pb);
 	return err;
 }

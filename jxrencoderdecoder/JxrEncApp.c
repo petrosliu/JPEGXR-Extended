@@ -254,8 +254,6 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 					pMyArgs->rate = (float) atof(argv[i]);
 					if (pMyArgs->rate <= 0.f)
 						Call(WMP_errInvalidArgument);
-					args->fltImageQuality = (float) 255;
-					pMyArgs->quant = (unsigned char) 255;
 					idxQR = 1;
 				}else Call(WMP_errInvalidArgument);
 			}
@@ -266,8 +264,6 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 					pMyArgs->rate = (float) atof(argv[i]);
 					if (pMyArgs->rate <= 0.f)
 						Call(WMP_errInvalidArgument);
-					args->fltImageQuality = (float) 255;
-					pMyArgs->quant = (unsigned char) 255;
 					idxQR = 2;
 				}else Call(WMP_errInvalidArgument);
 			}
@@ -280,6 +276,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 					if (args->fltImageQuality < 0.f
 							|| args->fltImageQuality > 255.f)
 						Call(WMP_errInvalidArgument);
+					pMyArgs->rate = (float) pMyArgs->bpi; //YD added default rate
 					idxQR = 0;
 				} else Call(WMP_errInvalidArgument);
 			}
@@ -377,6 +374,9 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				else
 					pMyArgs->bpi = atoi(argv[i]);
 				pMyArgs->end = 1;//little endian
+				if(idxQR == -1 || idxQR == 0){
+					pMyArgs->rate = (float) pMyArgs->bpi; //YD added default rate
+				}
 				break;
 			case 'B':
 				if(strcmp(argv[i],"32f")==0)
@@ -459,12 +459,16 @@ ERR connectWmpEncAppArgsAndARGInputs(WMPENCAPPARGS* args, ARGInputs* pMyArgs)
 
 	args->szInputFile = pMyArgs->inputFile;
 	//YD added
-	args->fltImageCRatio = ((float)pMyArgs->bpi/pMyArgs->rate>1.0)?
+	args->fltImageCRatio = ((float)pMyArgs->bpi/pMyArgs->rate>1.05)?
 							(float)pMyArgs->bpi/pMyArgs->rate:
 							1.0;
-							
-	args->wmiSCP.uiDefaultQPIndex = pMyArgs->quant;
-	args->fltImageQuality = pMyArgs->quant;
+	if(args->fltImageCRatio==1.0){
+		args->wmiSCP.uiDefaultQPIndex = pMyArgs->quant;
+		args->fltImageQuality = pMyArgs->quant;
+	}else{
+		args->wmiSCP.uiDefaultQPIndex = 255;
+		args->fltImageQuality = 255;
+	}
 
 	//printf("pMyArgs output file is %d\n",pMyArgs->outputFile);
 	if(pMyArgs->outputFile != NULL && pMyArgs->outputFile != '\0')

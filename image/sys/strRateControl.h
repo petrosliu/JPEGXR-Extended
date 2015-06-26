@@ -9,37 +9,57 @@
 #define NULL 0
 #endif
 
+#ifndef INF
+#define INF 0x3fffffff
+#endif
+
 #ifndef RATECONTOL_YD
 #define RATECONTOL_YD
 
 #include "windowsmediaphoto.h"
 #include "strcodec.h"
 
+#define FITLINEAR 1
+
 typedef struct tagQPCRNode {
 	int qp;
 	float cr;
 	struct tagQPCRNode* prev;
 	struct tagQPCRNode* next;
+	int index;
 } QPCRNode;
 
-//#define RATECONTROL_TEST_YD
+typedef struct tagQPCRList {
+	struct tagQPCRNode* head;
+	struct tagQPCRNode* curr;
+	struct tagQPCRNode* last;
+	int numOfNodes;
+	float crt;
+	int imageSize;
+	int bits;
+	int fitMode;
+	float* fit;
+	float tol;
+} QPCRList;
+
+#define RATECONTROL_TEST_YD
 
 #ifdef RATECONTROL_TEST_YD 
-void printQPCRList(QPCRNode* curr,QPCRNode* head);
-int countQPCRNode(QPCRNode* head);
+void printQPCRList(QPCRList* list);
+int countQPCRNode(QPCRList* list);
 #endif
 
-QPCRNode* addQPCRNodeinList(int qpc, float crc, QPCRNode* head);
+int isTargetReached(QPCRList* list);
 
-int isQPCRNodeinList(int qp, QPCRNode* head);
+int isQPCRNodeinList(QPCRList* list, int qp);
 
-QPCRNode* findQPCRNodeinList(int qp, QPCRNode* head);
+void updateList(QPCRList* list, int qptmp, float crtmp);
 
-QPCRNode* getLastQPCRNode(float crt, QPCRNode* curr, QPCRNode* head);
+void freeQPCRList(QPCRList** plist);
 
-void freeQPCRList(QPCRNode** phead);
+int generateNextQP(QPCRList* list);
 
-int generateNextQP(QPCRNode* curr, QPCRNode* last, float crt);
+int generateFinalQP(QPCRList* list);
 
-int generateFinalQP(QPCRNode* curr, float crt);
+QPCRList* createQPCRList(int fitMode);
 #endif

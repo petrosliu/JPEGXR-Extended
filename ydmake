@@ -43,14 +43,16 @@ echo Making files
 make
 
 echo =====================
-echo Runing JxrEncApp -L 16 -i wavefield1_16b -h 560 -w 576 -o out.jxr -R 10
-./JxrEncApp -L 16 -i wavefield1_16b -h 560 -w 576 -o out.jxr -R 10  > scrn.txt
-
-echo 
+echo time ./JxrEncApp -L 16 -i wavefield1_16b -h 560 -w 576 -o out.jxr -q 100
+time ./JxrEncApp -L 16 -i wavefield1_16b -h 560 -w 576 -o out.jxr -q 100
 echo =====================
-echo Expected Data
-echo   Size: 321141    	Blocks: 640
-echo Encoded-only Data
-echo Size: 593628    	Blocks: 1160
+echo time ./JxrEncApp -L 16 -i wavefield1_16b -h 560 -w 576 -o out.jxr -R 10
+time ./JxrEncApp -L 16 -i wavefield1_16b -h 560 -w 576 -o out.jxr -R 10
+echo =====================
+echo time ./JxrEncApp -L 32 -i test_data1 -h 560 -w 576 -o out.jxr -q 100
+time ./JxrEncApp -L 32 -i test_data1 -h 560 -w 576 -o out.jxr -q 100
+echo =====================
+echo time ./JxrEncApp -L 32 -i test_data1 -h 560 -w 576 -o out.jxr -R 10
+time ./JxrEncApp -L 32 -i test_data1 -h 560 -w 576 -o out.jxr -R 10
 echo =====================
 stat out.jxr

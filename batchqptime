@@ -1,0 +1,8 @@
+#!/bin/bash
+# This is my first script.
+rm out.txt
+
+for i in {1..255}
+do
+{ time ./JxrEncApp -L 16 -q $i -i wavefield1_16b -h 560 -w 576 -o out.jxr; } 2>> out.txt
+done

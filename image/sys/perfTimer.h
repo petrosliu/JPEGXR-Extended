@@ -39,7 +39,7 @@
 // You choose the implementation by choosing which one of the many files
 // to compile and link with your application.
 //***************************************************************************
-
+#define DISABLE_PERF_MEASUREMENT
 #ifdef DISABLE_PERF_MEASUREMENT
 
 #define PERFTIMER_ONLY(code)

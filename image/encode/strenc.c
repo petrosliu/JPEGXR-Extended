@@ -1987,7 +1987,7 @@ Int ImageStrEncTransTerm(CTXSTRCODEC ctxSC) {
     //================================
 	//YD deleted
     //StrEncTerm(pSC);
-    
+	
     PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
     PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
     PERFTIMER_REPORT(pSC->m_fMeasurePerf, pSC);
@@ -2263,21 +2263,23 @@ Int ImageStrEncCtrlTerm(CTXSTRCODEC ctxSC) {
 
 	pSC->ProcessBottomRight(pSC);
 		
-    //================================
-    //StrEncTerm(pSC);
-    
-    PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
-    PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
-    PERFTIMER_REPORT(pSC->m_fMeasurePerf, pSC);
-    PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
-    PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
-    
-    //free(pSC);
+		
+	
 	pSC->cNumOfBits=0;
 	int k;
 	for (k = 0; k < pSC->cNumBitIO; k++) {
 		pSC->cNumOfBits += pSC->m_ppBitIO[k]->cBitsCounter;
 	}
+	
+    //================================
+    //StrEncTerm(pSC);
+	
+    PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+    PERFTIMER_STOP(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
+    PERFTIMER_REPORT(pSC->m_fMeasurePerf, pSC);
+    PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEncDecPerf);
+    PERFTIMER_DELETE(pSC->m_fMeasurePerf, pSC->m_ptEndToEndPerf);
+    //free(pSC);
     return ICERR_OK;
 }
 

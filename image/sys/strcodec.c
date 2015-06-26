@@ -1194,13 +1194,14 @@ ERR detachISWrite(CWMImageStrCodec* pSC, BitIOInfo* pIO) {
 // Performance Measurement
 //=========================
 #ifndef DISABLE_PERF_MEASUREMENT
-
+//#define DISABLE_PERF_VERBOSE_YD
 void OutputIndivPerfTimer(struct PERFTIMERSTATE *pPerfTimer, char *pszTimerName,
 		char *pszDescription, float fltMegaPixels) {
 	PERFTIMERRESULTS rResults;
 	Bool fResult;
 
 	fResult = FALSE;
+#ifndef DISABLE_PERF_VERBOSE_YD
 	printf("%s (%s): ", pszTimerName, pszDescription);
 	if (pPerfTimer) {
 		fResult = PerfTimerGetResults(pPerfTimer, &rResults);
@@ -1218,13 +1219,23 @@ void OutputIndivPerfTimer(struct PERFTIMERSTATE *pPerfTimer, char *pszTimerName,
 	}
 	if (FALSE == fResult)
 		printf("Results not available!\n");
+#else
+	if (pPerfTimer) {
+		fResult = PerfTimerGetResults(pPerfTimer, &rResults);
+		if (fResult) {
+			printf("%.3f\t",(float) rResults.iElapsedTime / 1000000);
+		}
+	}
+	if (FALSE == fResult)
+		printf("Na\t");
+#endif
 }
 
 void OutputPerfTimerReport(CWMImageStrCodec *pState) {
 	float fltMegaPixels;
 
 	assert(pState->m_fMeasurePerf);
-
+#ifndef DISABLE_PERF_VERBOSE_YD
 	printf(
 			"***************************************************************************\n");
 	printf("* Perf Report\n");
@@ -1236,7 +1247,9 @@ void OutputPerfTimerReport(CWMImageStrCodec *pState) {
 	printf("Image Width = %d, Height = %d, total MegaPixels = %.1f MP\n",
 			(int) pState->WMII.cWidth, (int) pState->WMII.cHeight,
 			fltMegaPixels);
-
+#else
+	printf("\n");
+#endif
 	OutputIndivPerfTimer(pState->m_ptEncDecPerf, "m_ptEncDecPerf", "excl I/O",
 			fltMegaPixels);
 	OutputIndivPerfTimer(pState->m_ptEndToEndPerf, "m_ptEndToEndPerf",
