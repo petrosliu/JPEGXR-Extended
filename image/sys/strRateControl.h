@@ -4,6 +4,8 @@
 // Created: June 7 2015
 // Comment: kit of QPCR linked list
 //*******************************************************************
+#include "windowsmediaphoto.h"
+#include "strcodec.h"
 
 #ifndef NULL
 #define NULL 0
@@ -13,12 +15,14 @@
 #define INF 0x3fffffff
 #endif
 
+#define ITEMAX 0
+
 #ifndef RATECONTOL_YD
 #define RATECONTOL_YD
 
-#include "windowsmediaphoto.h"
-#include "strcodec.h"
+//#define RATECONTROL_TEST_YD
 
+#define BINSEARCH 0
 #define FITLINEAR 1
 
 typedef struct tagQPCRNode {
@@ -31,6 +35,7 @@ typedef struct tagQPCRNode {
 
 typedef struct tagQPCRList {
 	struct tagQPCRNode* head;
+	struct tagQPCRNode* tail;
 	struct tagQPCRNode* curr;
 	struct tagQPCRNode* last;
 	int numOfNodes;
@@ -40,26 +45,23 @@ typedef struct tagQPCRList {
 	int fitMode;
 	float* fit;
 	float tol;
+	int finalQP;
+	int* pNumOfBits;
+	int* range;
 } QPCRList;
 
-#define RATECONTROL_TEST_YD
-
-#ifdef RATECONTROL_TEST_YD 
-void printQPCRList(QPCRList* list);
-int countQPCRNode(QPCRList* list);
-#endif
+QPCRList* createQPCRList(int fitMode);
 
 int isTargetReached(QPCRList* list);
 
-int isQPCRNodeinList(QPCRList* list, int qp);
+int generateNextQP(QPCRList* list);
 
 void updateList(QPCRList* list, int qptmp, float crtmp);
 
 void freeQPCRList(QPCRList** plist);
 
-int generateNextQP(QPCRList* list);
+#ifdef RATECONTROL_TEST_YD 
+void printQPCRList(QPCRList* list);
+#endif
 
-int generateFinalQP(QPCRList* list);
-
-QPCRList* createQPCRList(int fitMode);
 #endif
