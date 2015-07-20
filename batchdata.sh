@@ -1,6 +1,8 @@
 #!/bin/bash
 # This is my first script.
 
+dropbox stop
+
 for i in {1..19}
 do
 for k in {0..1}
@@ -139,3 +141,5 @@ done
 
 done
 done
+
+dropbox start

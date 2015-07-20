@@ -12,43 +12,12 @@
 //*******************************************************************
 float fitLinear(QPCRList* list){
 	float qp;
-	float a,b,c,d;
+	const int thsh=30;
+	const float weight=0.2;
 	
-	switch(list->bits){
-		case 8:
-			a=-4.4413;
-			b=44.1726;
-			c=-41.4936;
-			d=-43;
-			break;
-		case 16:
-			a=-15.8981;
-			b=127.8816;
-			c=-79.9908;
-			d=-53;
-			break;
-		case 32:
-			a=-34.9914;
-			b=257.2141;
-			c=-215.7579;
-			d=-60;
-			break;
-		default:
-			a=-18.4436;
-			b=143.0894;
-			c=-112.4141;
-			d=-150;
-			break;
-	}
-	if(list->numOfNodes==0){
-		qp=a*list->crt+b*sqrt(list->crt)+c+d;
-	}else if(list->numOfNodes==1){
-		qp=a*list->crt+b*sqrt(list->crt)+c+(float)(list->head->qp)-(a*(float)(list->head->cr)+b*sqrt((float)(list->head->cr))+c);
-	}else{
+	if(list->numOfNodes>=2){
 		qp=list->fit[0]*(float)list->crt+list->fit[1];
 		qp=(qp>255)?255:((qp<1)?1:qp);
-		const int thsh=30;
-		const float weight=0.2;
 		if(qp>list->range[1]||qp<list->range[0]){
 			qp=((float)list->range[1]-(float)list->range[0])*weight+(float)list->range[0];
 		}
@@ -56,19 +25,64 @@ float fitLinear(QPCRList* list){
 			if(list->range[1]-list->range[0]>thsh){
 				float max=((float)list->range[1]-(float)list->range[0])*weight+(float)list->range[0];
 				float pct=(qp-(float)list->range[0])/(max-(float)list->range[0]);
-				pct=(pct>1)?1:pct;
-				qp=((2-4*weight)*pct*pct+(4*weight-1)*pct)*(max-(float)list->range[0])+(float)list->range[0];
+				pct=((2-4*weight)*pct*pct+(4*weight-1)*pct);
+				pct=(pct>1)?1:((pct<0)?0:pct);
+				qp=pct*(max-(float)list->range[0])+(float)list->range[0];
 			}
 			else{
 				float pct=(qp-(float)list->range[0])/((float)list->range[1]-(float)list->range[0]);
-				qp=((2-4*weight)*pct*pct+(4*weight-1)*pct)*((float)list->range[1]-(float)list->range[0])+(float)list->range[0];
+				pct=((2-4*weight)*pct*pct+(4*weight-1)*pct);
+				pct=(pct>1)?1:((pct<0)?0:pct);
+				qp=pct*((float)list->range[1]-(float)list->range[0])+(float)list->range[0];
 			}
 		}
 		else if(qp<list->curr->qp&&qp>list->last->qp||qp<list->last->qp&&qp>list->curr->qp){
-			if(list->range[1]-list->range[0]>thsh){
+			if(list->range[1]-list->range[0]>thsh /*&& list->crt>=8.375*/){
 				float pct=(qp-(float)list->range[0])/((float)list->range[1]-(float)list->range[0]);
-				qp=(1-(2-4*weight)*pct*pct-(4*weight-1)*pct)*((float)list->range[1]-(float)list->range[0])+(float)list->range[0];	
+				pct=(2*pct-(2-4*weight)*pct*pct-(4*weight-1)*pct);
+				pct=(pct>1)?1:((pct<0)?0:pct);
+				qp=pct*((float)list->range[1]-(float)list->range[0])+(float)list->range[0];	
 			}
+		}
+	}else{	
+		float a,b,c,d;
+		float crt=list->crt;
+		switch(list->bits){
+			case 8:
+				if(crt>24.7301) crt=24.7301;
+				a=-4.4413;
+				b=44.1726;
+				c=-41.4936;
+				d=-43;
+				break;
+			case 16:
+				if(crt>16.1765) crt=16.1765;
+				a=-15.8981;
+				b=127.8816;
+				c=-79.9908;
+				d=-53;
+				break;
+			case 32:
+				if(crt>13.5083) crt=13.5083;
+				a=-34.9914;
+				b=257.2141;
+				c=-215.7579;
+				d=-60;
+				break;
+			default:
+				if(crt>15.0475) crt=15.0475;
+				a=-18.4436;
+				b=143.0894;
+				c=-112.4141;
+				d=-150;
+				break;
+		}
+		if(list->numOfNodes){
+			QPCRNode* head=list->head;
+			qp = a*crt + b*sqrt(crt) + c + (float)(head->qp)
+			    -(a*(float)(head->cr) + b*sqrt((float)(head->cr)) + c);
+		}else{
+			qp = a*crt + b*sqrt(crt) + c + d;
 		}
 	}
 	return qp;
@@ -276,7 +290,7 @@ int isTargetReached(QPCRList* list){
 	if(p==NULL){
 		if(list->tail->qp==255){
 			list->finalQP=255;
-			list->tail=p;
+			list->curr=list->tail;
 			return 1;
 		}else return 0;
 	}
@@ -420,57 +434,64 @@ int evaluateQPCRList(QPCRList* list){
 	QPCRNode* p=h;
 	while(p!=list->head){
 		p=p->prev;
-		if(p->index>=p->next->index) return 0;
+		if(p->index>=p->next->index && p->index>2) return 0;
 	}
 	p=h;
 	while(p!=list->tail){
 		p=p->next;
-		if(p->index>=p->prev->index) return 0;
+		if(p->index>=p->prev->index && p->index>2) return 0;
 	}
 	return 1;
 }
 
 void printQPCRList(QPCRList* list){
-	QPCRNode* curr=list->curr;
-	QPCRNode* p = list->head;
-	QPCRNode* q;
-	if(list->numOfNodes!=0){
-		printf("================================================================\n");
-		printf("index\tqp\tcr\tsize\t|index\tqp\tcr\tsize\n");
-		int i=1;
-		while(p != NULL){
-			q=getQPCRNodeByIndex(list,i);
-			i++;
-			printf("%d\t%d\t%.2f\t%.0f\t", q->index, q->qp, q->cr, (float) list->imageSize * (float) list->bits / q->cr / 8 + 0.5);
-		
-			printf("|%d\t%d\t%.2f\t%.0f", p->index, p->qp, p->cr, (float) list->imageSize * (float) list->bits / p->cr / 8 + 0.5);
-			if(p == curr && curr != NULL) printf("<-\n");
-			else printf("\n");
-			p = p->next;
+	if(RATECONTROL_TEST_VERBOSE){
+		QPCRNode* curr=list->curr;
+		QPCRNode* p = list->head;
+		QPCRNode* q;
+		if(list->numOfNodes!=0){
+			printf("================================================================\n");
+			printf("index\tqp\tcr\tsize\t|index\tqp\tcr\tsize\n");
+			int i=1;
+			while(p != NULL){
+				q=getQPCRNodeByIndex(list,i);
+				i++;
+				printf("%d\t%d\t%.2f\t%.0f\t", q->index, q->qp, q->cr, (float) list->imageSize * (float) list->bits / q->cr / 8 + 0.5);
+			
+				printf("|%d\t%d\t%.2f\t%.0f", p->index, p->qp, p->cr, (float) list->imageSize * (float) list->bits / p->cr / 8 + 0.5);
+				if(p == curr && curr != NULL) printf("<-\n");
+				else printf("\n");
+				p = p->next;
+			}
+			if(!evaluateQPCRList(list)) printf("ALERT: APPROACH IS INEFFICIENT!\n");
 		}
-		if(!evaluateQPCRList(list)) printf("ALERT: APPROACH IS NOT EFFICIENT!\n");
+		printf("================================================================\n");
+		printf("mode\t");
+		switch(list->fitMode){
+			case FITLINEAR:
+				printf("FITLINEAR\t");
+				break;
+			case BINSEARCH:
+				printf("BINSEARCH\t");
+				break;
+			default:
+				printf("ERROR %d\t",list->fitMode);
+		}
+		printf("bits %d\n",list->bits);
+		printf("ite\t%d\t",list->numOfNodes);
+		if(ITEMAX) printf("itemax\t%d\n",ITEMAX);
+		else printf("itemax\tNA\n");
+		printf("qp\tcur\t%d\tfin\t%d\n",curr->qp, list->finalQP);
+		printf("cr\tcur\t%.2f\ttar\t%.2f\ttol\t%.2f\n",curr->cr, list->crt, list->tol);
+		printf("size\tcur\t%.0f\ttar\t%.0f\traw\t%.0f\n",
+				(float) (*(list->pNumOfBits)) / 8,
+				(float) list->imageSize * (float) list->bits / list->crt / 8,
+				(float) list->imageSize * (float) list->bits / 8);
+		printf("================================================================\n");
+	}else{
+		printf("%.2f\t%d\t%d\t%d\t%d",list->crt,list->finalQP,list->imageSize,list->bits,list->numOfNodes);
+		if(!evaluateQPCRList(list)) printf("\tINEFF\n");
+		else printf("\n");
 	}
-	printf("================================================================\n");
-	printf("mode\t");
-	switch(list->fitMode){
-		case FITLINEAR:
-			printf("FITLINEAR\t");
-			break;
-		case BINSEARCH:
-			printf("BINSEARCH\t");
-			break;
-		default:
-			printf("ERROR %d",list->fitMode);
-	}
-	if(ITEMAX) printf("itemax\t%d\t",ITEMAX);
-	else printf("itemax\tNA\t");
-	printf("ite\t%d\n",list->numOfNodes);
-	printf("qp\tcur\t%d\tfin\t%d\n",curr->qp, list->finalQP);
-	printf("cr\tcur\t%.2f\ttar\t%.2f\ttol\t%.2f\n",curr->cr, list->crt, list->tol);
-	printf("size\tcur\t%.0f\ttar\t%.0f\traw\t%.0f\n",
-			(float) (*(list->pNumOfBits)) / 8,
-			(float) list->imageSize * (float) list->bits / list->crt / 8,
-			(float) list->imageSize * (float) list->bits / 8);
-	printf("================================================================\n");
 }
 #endif
