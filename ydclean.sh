@@ -32,3 +32,4 @@ rm JXRGlueJxr.o
 rm libjpegxr.a
 rm strFwdTransform.o
 rm strRateControl.o
+rm strAdaptiveQP.o

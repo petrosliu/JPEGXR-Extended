@@ -309,7 +309,7 @@ int isTargetReached(QPCRList* list){
 		list->curr=p;
 		return 1;
 	}
-	if(p->prev!=NULL && p->prev->cr > list->crt - list->tol/2 && p->prev->cr <= list->crt){
+	if(p->prev!=NULL && p->prev->cr > list->crt - 0.25 && p->prev->cr <= list->crt){
 		list->finalQP=p->prev->qp+1;
 		list->curr=p->prev;
 		return 1;
@@ -444,7 +444,7 @@ int evaluateQPCRList(QPCRList* list){
 	return 1;
 }
 
-void printQPCRList(QPCRList* list){
+void printQPCRList(QPCRList* list){	
 	if(RATECONTROL_TEST_VERBOSE){
 		QPCRNode* curr=list->curr;
 		QPCRNode* p = list->head;
@@ -488,10 +488,10 @@ void printQPCRList(QPCRList* list){
 				(float) list->imageSize * (float) list->bits / list->crt / 8,
 				(float) list->imageSize * (float) list->bits / 8);
 		printf("================================================================\n");
-	}else{
+	}else{		
 		printf("%.2f\t%d\t%d\t%d\t%d",list->crt,list->finalQP,list->imageSize,list->bits,list->numOfNodes);
-		if(!evaluateQPCRList(list)) printf("\tINEFF\n");
-		else printf("\n");
+		if(!evaluateQPCRList(list)) printf("\tINEFF");
+		printf("\n");
 	}
 }
 #endif

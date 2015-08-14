@@ -1194,7 +1194,7 @@ ERR detachISWrite(CWMImageStrCodec* pSC, BitIOInfo* pIO) {
 // Performance Measurement
 //=========================
 #ifndef DISABLE_PERF_MEASUREMENT
-//#define DISABLE_PERF_VERBOSE_YD
+
 void OutputIndivPerfTimer(struct PERFTIMERSTATE *pPerfTimer, char *pszTimerName,
 		char *pszDescription, float fltMegaPixels) {
 	PERFTIMERRESULTS rResults;

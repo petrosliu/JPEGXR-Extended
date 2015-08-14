@@ -415,6 +415,7 @@ typedef struct tagCWMIStrCodecParam {
 	//YD added
 	int32_t* pTransformedImage;
 	U32 cNumOfBits;
+	Bool bAdaptiveQP;
 	
 } CWMIStrCodecParam;
 

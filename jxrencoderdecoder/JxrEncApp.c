@@ -140,6 +140,7 @@ void WmpEncAppInitDefaultArgs(WMPENCAPPARGS* args) {
 	args->fltImageQuality = 1.f;
 	
 	//YD added
+	args->wmiSCP.bAdaptiveQP = FALSE;
 	args->wmiSCP.fltCRatio = 1.0;
 	args->fltImageCRatio = 1.0;
 	
@@ -201,7 +202,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 	char c;
 	int idxPF = -1;
 	//YD added
-	int idxQR = -1; // 0 quantize 1 rate 2 ratio
+	int idxQR = -1; // 0 quantize 1 rate 2 ratio 3 variable quant
 
 	WmpEncAppInitDefaultArgs(args);
 				char *actualPath;
@@ -230,7 +231,15 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 		case 'u':
 			args->wmiSCP.bUnscaledArith = TRUE;
 			break;
-
+		//YD added
+		case 'A': {
+			if(idxQR == -1){
+				idxQR = 3;
+				args->wmiSCP.bAdaptiveQP = TRUE;
+			}else Call(WMP_errInvalidArgument);
+		}
+			break;
+			
 		default:
 			i++;
 			if (i == argc || argv[i][0] == '-') // need more info
@@ -281,7 +290,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				} else Call(WMP_errInvalidArgument);
 			}
 				break;
-
+				
 			case 'Q':
 				args->wmiSCP.uiDefaultQPIndexAlpha = (U8) (atoi(argv[i]));
 				break;
@@ -437,7 +446,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 ERR connectWmpEncAppArgsAndARGInputs(WMPENCAPPARGS* args, ARGInputs* pMyArgs)
 {
 
-	WmpEncAppInitDefaultArgs(args);
+	//WmpEncAppInitDefaultArgs(args);
 	args->wmiSCP.cfColorFormat = YUV_444; //Y_ONLY; becuase tif original program is like this...
 	const char* defaultOut = "out.jxr";
 	switch(pMyArgs->bpi)
@@ -459,7 +468,7 @@ ERR connectWmpEncAppArgsAndARGInputs(WMPENCAPPARGS* args, ARGInputs* pMyArgs)
 
 	args->szInputFile = pMyArgs->inputFile;
 	//YD added
-	args->fltImageCRatio = ((float)pMyArgs->bpi/pMyArgs->rate>1.05)?
+	args->fltImageCRatio = ((float)pMyArgs->bpi/pMyArgs->rate>1.0)?
 							(float)pMyArgs->bpi/pMyArgs->rate:
 							1.0;
 	if(args->fltImageCRatio==1.0){
@@ -616,7 +625,7 @@ main(int argc, char* argv[]) {
 					(U32) rect.Width < (uTileX >> 1) ?
 							0 : (rect.Width + (uTileX >> 1)) / uTileX - 1;
 		}
-
+		
 		Call(
 				pEncoder->Initialize(pEncoder, pEncodeStream, &args.wmiSCP, sizeof(args.wmiSCP)));
 
@@ -693,12 +702,12 @@ main(int argc, char* argv[]) {
 			//YD added
 			pEncoder->WMP.wmiSCP.uiDefaultQPIndex = (U8) args.fltImageQuality;
 			pEncoder->WMP.wmiSCP.fltCRatio = args.fltImageCRatio;
-			}
+		}
 
 		if (pEncoder->WMP.wmiSCP.uAlphaMode == 2)
 			pEncoder->WMP.wmiSCP_Alpha.uiDefaultQPIndex =
 					args.wmiSCP.uiDefaultQPIndexAlpha;
-
+		
 		Call(pEncoder->SetPixelFormat(pEncoder, args.guidPixFormat));
 
 		Call(pEncoder->SetSize(pEncoder, rect.Width, rect.Height)); /*made it here in step by step run...*/

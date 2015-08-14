@@ -40,6 +40,8 @@
 // to compile and link with your application.
 //***************************************************************************
 #define DISABLE_PERF_MEASUREMENT
+#define DISABLE_PERF_VERBOSE_YD
+
 #ifdef DISABLE_PERF_MEASUREMENT
 
 #define PERFTIMER_ONLY(code)

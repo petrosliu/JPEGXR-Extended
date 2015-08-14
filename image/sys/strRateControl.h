@@ -4,6 +4,7 @@
 // Created: June 7 2015
 // Comment: kit of QPCR linked list
 //*******************************************************************
+
 #include "windowsmediaphoto.h"
 #include "strcodec.h"
 
@@ -15,6 +16,7 @@
 #define INF 0x3fffffff
 #endif
 
+#define RATETOL 0.05
 #define ITEMAX 0
 
 #ifndef RATECONTOL_YD

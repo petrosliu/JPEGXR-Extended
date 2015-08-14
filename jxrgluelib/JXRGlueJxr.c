@@ -978,7 +978,7 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 	list->crt = pIE->WMP.wmiSCP.fltCRatio;
 	list->imageSize = pIE->WMP.wmiI.cWidth * pIE->WMP.wmiI.cHeight;
 	list->bits = pIE->WMP.wmiI.cBitsPerUnit;
-	list->tol = (1 / (1 - 0.05) - 1) * list->crt;
+	list->tol = (1 / (1 - RATETOL) - 1) * list->crt;
 	list->pNumOfBits = &(pIE->WMP.wmiSCP.cNumOfBits);
 	int qptmp;
 	float crtmp;

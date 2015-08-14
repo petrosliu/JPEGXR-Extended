@@ -52,22 +52,6 @@ extern "C" {
 	typedef struct tagPKTestDecode PKTestDecode;
 #endif // __ANSI__
 //================================================================
-	//------------------------------------------------
-	//defined in JXRGlue.h
-//typedef struct
-//	{
-//		int end; //endianness
-//		int bpi;
-//		int wid;
-//		int hei;
-//		int isFloat;
-//		char* inputFile;
-//		char* outputFile;
-//		//may or may not need more...
-//		int quant;
-//	
-//	} ARGInputs;
-//----------------------------------------------------------------
 	ERR PKTestFactory_CreateCodec(const PKIID* iid, void** ppv, ARGInputs* pMyArgs);
 	EXTERN_C ERR PKCreateTestFactory(PKCodecFactory**, U32, ARGInputs* pMyArgs);
 

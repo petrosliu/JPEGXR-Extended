@@ -1,4 +1,3 @@
-dropbox stop
 echo =====================
 echo Making files
 make
@@ -18,4 +17,3 @@ stat out.jxr
 echo =====================
 
 ./ydclean.sh
-dropbox start
