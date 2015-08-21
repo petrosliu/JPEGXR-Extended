@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include "strcodec.h"
 #include "encode.h"
+#include "strAdaptiveQP.h"
 
 #ifdef MEM_TRACE
 #define TRACE_MALLOC    1
@@ -102,7 +103,6 @@ static Void EncodeSignificantAbsLevel(UInt iAbsLevel,
  *************************************************************************/
 
 Void encodeQPIndex(BitIOInfo* pIO, U8 iIndex, U8 cBits) {
-	printf("encodeQPIndex ");
 	if (iIndex == 0)
 		putBit16z(pIO, 0, 1);
 	else {
@@ -113,7 +113,7 @@ Void encodeQPIndex(BitIOInfo* pIO, U8 iIndex, U8 cBits) {
 
 Int EncodeMacroblockDC(CWMImageStrCodec *pSC, CCodingContext *pContext,
 		Int iMBX, Int iMBY) {
-	#if 1
+	#if 0
     	printf("DC ");
 	#endif
 	
@@ -126,34 +126,38 @@ Int EncodeMacroblockDC(CWMImageStrCodec *pSC, CCodingContext *pContext,
 	Int iModelBits = pContext->m_aModelDC.m_iFlcBits[0];
 	COLORFORMAT cf = pSC->m_param.cfColorFormat;
 	const Int iChannels = (Int) pSC->m_param.cNumChannels;
-
+	
 	UNREFERENCED_PARAMETER( iMBX);
 	UNREFERENCED_PARAMETER( iMBY);
 
 	writeIS_L1(pSC, pIO);
 //YD mark
 	if (pSC->m_param.bTranscode == FALSE) {
+		// pMBInfo->iQIndexLP = (U8) (
+		// 		pTile->cNumQPLP > 1 ? (rand() % pTile->cNumQPLP) : 0);
+		// pMBInfo->iQIndexHP = (U8) (
+		// 		pTile->cNumQPHP > 1 ? (rand() % pTile->cNumQPHP) : 0);
+		QPMatrix* qpMatrix=(QPMatrix*)pSC->qpMatrix;
+		if(pSC->WMISCP.bAdaptiveQP) adpativeMBQP(pSC);
 		pMBInfo->iQIndexLP = (U8) (
-				pTile->cNumQPLP > 1 ? (rand() % pTile->cNumQPLP) : 0);
+				pTile->cNumQPLP > 1 ? 
+				qpMatrix->pLPQPMatrix[(pSC->cRow-1)*pSC->cmbWidth+pSC->cColumn-1]
+				 : 0);
 		pMBInfo->iQIndexHP = (U8) (
-				pTile->cNumQPHP > 1 ? (rand() % pTile->cNumQPHP) : 0);
-				
-		printf("pMBInfo->iQIndexLP %u pMBInfo->iQIndexHP %u\n",pMBInfo->iQIndexLP,pMBInfo->iQIndexHP);
+				pTile->cNumQPHP > 1 ? 
+				qpMatrix->pHPQPMatrix[(pSC->cRow-1)*pSC->cmbWidth+pSC->cColumn-1]
+				 : 0);	
 	}
 	if (pTile->cBitsHP == 0 && pTile->cNumQPHP > 1){ // use LP QP
-		printf("(pTile->cBitsHP == 0 && pTile->cNumQPHP > 1)\n");
 		pMBInfo->iQIndexHP = pMBInfo->iQIndexLP;
 	}
 
 	if (pSC->WMISCP.bfBitstreamFormat == SPATIAL
 			&& pSC->WMISCP.sbSubband != SB_DC_ONLY) {
-		printf("(pSC->WMISCP.bfBitstreamFormat == SPATIAL && pSC->WMISCP.sbSubband != SB_DC_ONLY)\n");
 		if (pTile->cBitsLP > 0){ // MB-based LP QP index
-			printf("(pTile->cBitsLP > 0)\n");
 			encodeQPIndex(pIO, pMBInfo->iQIndexLP, pTile->cBitsLP);
 		}
 		if (pSC->WMISCP.sbSubband != SB_NO_HIGHPASS && pTile->cBitsHP > 0){ // MB-based HP QP index
-			printf("(pSC->WMISCP.sbSubband != SB_NO_HIGHPASS && pTile->cBitsHP > 0)\n");
 			encodeQPIndex(pIO, pMBInfo->iQIndexHP, pTile->cBitsHP);
 		}
 	}
@@ -486,7 +490,7 @@ static Int AdaptiveScan(const PixelI *pCoeffs, Int *pResidual,
  *************************************************************************/
 Int EncodeMacroblockLowpass(CWMImageStrCodec *pSC, CCodingContext *pContext,
 		Int iMBX, Int iMBY) {
-	#if 1
+	#if 0
     	printf("LP ");
 	#endif
 	
@@ -1181,7 +1185,7 @@ static Void CodeCBP(CWMImageStrCodec * pSC, CCodingContext *pContext, Int iMBX,
  *************************************************************************/
 Int EncodeMacroblockHighpass(CWMImageStrCodec * pSC, CCodingContext *pContext,
 		Int iMBX, Int iMBY) {
-	#if 1
+	#if 0
     	printf("HP\n");
 	#endif
 	

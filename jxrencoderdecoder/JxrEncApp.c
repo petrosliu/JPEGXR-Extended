@@ -202,7 +202,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 	char c;
 	int idxPF = -1;
 	//YD added
-	int idxQR = -1; // 0 quantize 1 rate 2 ratio 3 variable quant
+	int idxQR = -1; // 0 quantize 1 rate 2 ratio
 
 	WmpEncAppInitDefaultArgs(args);
 				char *actualPath;
@@ -232,12 +232,8 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 			args->wmiSCP.bUnscaledArith = TRUE;
 			break;
 		//YD added
-		case 'A': {
-			if(idxQR == -1){
-				idxQR = 3;
-				args->wmiSCP.bAdaptiveQP = TRUE;
-			}else Call(WMP_errInvalidArgument);
-		}
+		case 'A':
+			args->wmiSCP.bAdaptiveQP = TRUE;
 			break;
 			
 		default:
@@ -417,7 +413,8 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 	
 	//YD added	
 	if(idxQR == 2) pMyArgs->rate = (float) pMyArgs->bpi / pMyArgs->rate;
-
+	if(idxQR == -1) args->wmiSCP.bAdaptiveQP = FALSE;
+	
 	FailIf((int) sizeof2(pixelFormat) <= idxPF, WMP_errUnsupportedFormat);
 	if (idxPF >= 0)
 		args->guidPixFormat = *pixelFormat[idxPF];
@@ -703,6 +700,7 @@ main(int argc, char* argv[]) {
 			pEncoder->WMP.wmiSCP.uiDefaultQPIndex = (U8) args.fltImageQuality;
 			pEncoder->WMP.wmiSCP.fltCRatio = args.fltImageCRatio;
 		}
+		pEncoder->WMP.wmiSCP.qpMatrix=NULL;
 
 		if (pEncoder->WMP.wmiSCP.uAlphaMode == 2)
 			pEncoder->WMP.wmiSCP_Alpha.uiDefaultQPIndex =

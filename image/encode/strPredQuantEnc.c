@@ -49,7 +49,7 @@ I32 QUANT(PixelI v, PixelI o, I32 man, I32 exp) {
 
 Int quantizeMacroblock(CWMImageStrCodec* pSC) {
 	
-	#if 1 
+	#if 0
 		printf("quantizeMacroblock\n");
 	#endif
 
@@ -59,7 +59,6 @@ Int quantizeMacroblock(CWMImageStrCodec* pSC) {
 	int iChannel, i, j;
 //YD mark
 	if (/*pSC->m_param.bScaledArith && */pSC->m_param.bTranscode == FALSE){
-		printf("(pSC->m_param.bTranscode == FALSE)\n");
 		for (iChannel = 0; iChannel < (int) pSC->m_param.cNumChannels;
 				iChannel++) {
 			const Bool bUV = (iChannel > 0

@@ -28,6 +28,7 @@
 #include "strcodec.h"
 #include "encode.h"
 #include "strTransform.h"
+#include "strAdaptiveQP.h"
 #include <math.h>
 #include "perfTimer.h"
 
@@ -55,7 +56,7 @@ void StrEncOpt(CWMImageStrCodec* pSC);
 #define MINIMUM_PACKET_LENGTH 4  // as long as packet header - skipped if data is not accessed (happens only for flexbits)
 Void writeQuantizer(CWMIQuantizer * pQuantizer[MAX_CHANNELS], BitIOInfo * pIO,
 	U8 cChMode, size_t cChannel, size_t iPos) {
-	#if 1 
+	#if 0
 		printf("writeQuantizer\n");
 	#endif
 	if (cChMode > 2)
@@ -82,7 +83,7 @@ Void writeQuantizer(CWMIQuantizer * pQuantizer[MAX_CHANNELS], BitIOInfo * pIO,
 // xxx:           000(spatial) 001(DC) 010(AD) 011(AC) 100(FL) 101-111(reserved)
 // ?????:         (iTileY * cNumOfSliceV + iTileX)
 Void writePacketHeader(BitIOInfo * pIO, U8 ptPacketType, U8 pID) {
-	#if 1 
+	#if 0
 		printf("writePacketHeader\n");
 	#endif
 	putBit16(pIO, 0, 8);
@@ -92,20 +93,21 @@ Void writePacketHeader(BitIOInfo * pIO, U8 ptPacketType, U8 pID) {
 }
 
 Int writeTileHeaderDC(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
-	#if 1 
+	#if 0
 		printf("writeTileHeaderDC\n");
 	#endif    
     size_t iTile, j = 1U;//(pSC->m_pNextSC == NULL ? 1U : 2U);
 
+	
 	for (; j > 0; j--) {
 		if ((pSC->m_param.uQPMode & 1) != 0) { // not DC uniform
 			//YD mark
-			
+			QPMatrix* qpMatrix=(QPMatrix*)pSC->qpMatrix;			
 			CWMITile * pTile = pSC->pTile + pSC->cTileColumn;
 			size_t i;
 
-			pTile->cChModeDC = (U8)(rand() & 3); // channel mode, just for concept proofing!
-			printf("pTile->cChModeDC %u\n",pTile->cChModeDC);
+			//pTile->cChModeDC = (U8)(rand() & 3); // channel mode, just for concept proofing!
+			pTile->cChModeDC = (U8) 0; //uniform
 			
 			if (pSC->cTileRow + pSC->cTileColumn == 0) // allocate DC QP info
 			for (iTile = 0; iTile <= pSC->WMISCP.cNumOfSliceMinus1V;
@@ -114,9 +116,10 @@ Int writeTileHeaderDC(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 				pSC->m_param.cNumChannels, 1) != ICERR_OK)
 				return ICERR_ERROR;
 
-			printf("for i pSC->m_param.cNumChannels %d\n",pSC->m_param.cNumChannels);
 			for (i = 0; i < pSC->m_param.cNumChannels; i++){
-				pTile->pQuantizerDC[i]->iIndex = (U8)((rand() & 0x2f) + 1); // QP indexes, just for concept proofing!
+				//pTile->pQuantizerDC[i]->iIndex = (U8)((rand() & 0x2f) + 1); // QP indexes, just for concept proofing!
+				pTile->pQuantizerDC[i]->iIndex = (U8) qpMatrix->iDCQP;
+				//printf("pQuantizerDC %d\n",pTile->pQuantizerDC[i]->iIndex);
 			}
 			formatQuantizer(pTile->pQuantizerDC, pTile->cChModeDC,
 				pSC->m_param.cNumChannels, 0, TRUE,
@@ -137,27 +140,26 @@ Int writeTileHeaderDC(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 }
 
 Int writeTileHeaderLP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
-	#if 1 
+	#if 0
 		printf("writeTileHeaderLP\n");
 	#endif    
     size_t k = 1U;//(pSC->m_pNextSC == NULL ? 1U : 2U);
-
+	
 	for (; k > 0; k--) {
 		//YD mark
 		if (pSC->WMISCP.sbSubband != SB_DC_ONLY
 			&& (pSC->m_param.uQPMode & 2) != 0) { // not LP uniform
-			printf("(pSC->WMISCP.sbSubband != SB_DC_ONLY && (pSC->m_param.uQPMode & 2) != 0)\n");
+			QPMatrix* qpMatrix=(QPMatrix*)pSC->qpMatrix;
 			CWMITile * pTile = pSC->pTile + pSC->cTileColumn;
 			U8 i, j;
 
-			pTile->bUseDC = ((rand() & 1) == 0 ? TRUE : FALSE); // use DC quantizer?
-			printf("pTile->bUseDC %d\n",pTile->bUseDC);
+			//pTile->bUseDC = ((rand() & 1) == 0 ? TRUE : FALSE); // use DC quantizer?
+			pTile->bUseDC = FALSE;
 			putBit16(pIO, pTile->bUseDC == TRUE ? 1 : 0, 1);
 			pTile->cBitsLP = 0;
 
-			pTile->cNumQPLP = (
-				pTile->bUseDC == TRUE ? 1 : (U8)((rand() & 0xf) + 1)); // # of LP QPs
-			printf("pTile->cNumQPLP %u\n",pTile->cNumQPLP);
+			//pTile->cNumQPLP = (pTile->bUseDC == TRUE ? 1 : (U8)((rand() & 0xf) + 1)); // # of LP QPs
+			pTile->cNumQPLP = (pTile->bUseDC == TRUE ? 1 : (U8)qpMatrix->iLPNum);
 			if (pSC->cTileRow > 0)
 				freeQuantizer(pTile->pQuantizerLP);
 
@@ -169,16 +171,16 @@ Int writeTileHeaderLP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 				useDCQuantizer(pSC, pSC->cTileColumn);
 			else {
 				putBit16(pIO, pTile->cNumQPLP - 1, 4);
-
 				pTile->cBitsLP = dquantBits(pTile->cNumQPLP);
-
-				printf("for i pTile->cNumQPLP %d\n",pTile->cNumQPLP);
-				printf("for j pSC->m_param.cNumChannels %d\n",pSC->m_param.cNumChannels);
+				
 				for (i = 0; i < pTile->cNumQPLP; i++) {
-					pTile->cChModeLP[i] = (U8)(rand() & 3); // channel mode, just for concept proofing!
-					for (j = 0; j < pSC->m_param.cNumChannels; j++)
-						pTile->pQuantizerLP[j][i].iIndex = (U8)((rand() & 0xfe)
-						+ 1); // QP indexes, just for concept proofing!
+					//pTile->cChModeLP[i] = (U8)(rand() & 3); // channel mode, just for concept proofing!
+					pTile->cChModeLP[i] = (U8) 0;
+					for (j = 0; j < pSC->m_param.cNumChannels; j++){
+						//pTile->pQuantizerLP[j][i].iIndex = (U8)((rand() & 0xfe) + 1); // QP indexes, just for concept proofing!
+						pTile->pQuantizerLP[j][i].iIndex = (U8)qpMatrix->iLPQP[i];
+						//printf("pQuantizerLP %d\n",pTile->pQuantizerLP[j][i].iIndex);
+					}
 					formatQuantizer(pTile->pQuantizerLP, pTile->cChModeLP[i],
 						pSC->m_param.cNumChannels, i, TRUE,
 						pSC->m_param.bScaledArith);
@@ -194,29 +196,27 @@ Int writeTileHeaderLP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 }
 
 Int writeTileHeaderHP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
-	#if 1 
+	#if 0
 		printf("writeTileHeaderHP\n");
 	#endif    
     size_t k = 1U;//(pSC->m_pNextSC == NULL ? 1U : 2U);
-
+		
 	for (; k > 0; k--) {
 		//YD mark
 		if (pSC->WMISCP.sbSubband != SB_DC_ONLY
 			&& pSC->WMISCP.sbSubband != SB_NO_HIGHPASS
 			&& (pSC->m_param.uQPMode & 4) != 0) { // not HP uniform
-			printf("(pSC->WMISCP.sbSubband != SB_DC_ONLY && pSC->WMISCP.sbSubband != SB_NO_HIGHPASS && (pSC->m_param.uQPMode & 4) != 0)\n");
+			QPMatrix* qpMatrix=(QPMatrix*)pSC->qpMatrix;
 			CWMITile * pTile = pSC->pTile + pSC->cTileColumn;
 			U8 i, j;
 
-			pTile->bUseLP = ((rand() & 1) == 0 ? TRUE : FALSE); // use LP quantizer?
-			printf("pTile->bUseLP %d\n",pTile->bUseLP);
+			//pTile->bUseLP = ((rand() & 1) == 0 ? TRUE : FALSE); // use LP quantizer?
+			pTile->bUseLP = FALSE;
 			putBit16(pIO, pTile->bUseLP == TRUE ? 1 : 0, 1);
 			pTile->cBitsHP = 0;
 
-			pTile->cNumQPHP = (
-				pTile->bUseLP == TRUE ?
-				pTile->cNumQPLP : (U8)((rand() & 0xf) + 1)); // # of LP QPs
-			printf("pTile->cNumQPHP %u\n",pTile->cNumQPHP);
+			//pTile->cNumQPHP = (pTile->bUseLP == TRUE ? pTile->cNumQPLP : (U8)((rand() & 0xf) + 1)); // # of LP QPs
+			pTile->cNumQPHP = (pTile->bUseLP == TRUE ? pTile->cNumQPLP : (U8)qpMatrix->iHPNum);
 			if (pSC->cTileRow > 0)
 				freeQuantizer(pTile->pQuantizerHP);
 
@@ -230,13 +230,14 @@ Int writeTileHeaderHP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 				putBit16(pIO, pTile->cNumQPHP - 1, 4);
 				pTile->cBitsHP = dquantBits(pTile->cNumQPHP);
 
-				printf("for i pTile->cNumQPHP %d\n",pTile->cNumQPHP);
-				printf("for j pSC->m_param.cNumChannels %d\n",pSC->m_param.cNumChannels);
 				for (i = 0; i < pTile->cNumQPHP; i++) {
-					pTile->cChModeHP[i] = (U8)(rand() & 3); // channel mode, just for concept proofing!
-					for (j = 0; j < pSC->m_param.cNumChannels; j++)
-						pTile->pQuantizerHP[j][i].iIndex = (U8)((rand() & 0xfe)
-						+ 1); // QP indexes, just for concept proofing!
+					//pTile->cChModeHP[i] = (U8)(rand() & 3); // channel mode, just for concept proofing!
+					pTile->cChModeHP[i] = (U8) 0;
+					for (j = 0; j < pSC->m_param.cNumChannels; j++){
+						//pTile->pQuantizerHP[j][i].iIndex = (U8)((rand() & 0xfe) + 1); // QP indexes, just for concept proofing!
+						pTile->pQuantizerHP[j][i].iIndex = (U8)qpMatrix->iHPQP[i];
+						//printf("pQuantizerHP %d\n",pTile->pQuantizerHP[j][i].iIndex);
+					}
 					formatQuantizer(pTile->pQuantizerHP, pTile->cChModeHP[i],
 						pSC->m_param.cNumChannels, i, FALSE,
 						pSC->m_param.bScaledArith);
@@ -258,7 +259,7 @@ Int ctrlMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 	#if 0
     	if(pSC->cColumn<3||pSC->cColumn>33) printf("\tcMB %d %d %d\n",iMBY,iMBX,pSC->cTileColumn);
     #endif
-	
+		
 	if (pSC->m_bCtxLeft && pSC->m_bCtxTop && pSC->m_bSecondary == FALSE
 		&& pSC->m_param.bTranscode == FALSE) { // write packet headers
 		U8 pID = (U8)((pSC->cTileRow * (pSC->WMISCP.cNumOfSliceMinus1V + 1)
@@ -360,10 +361,15 @@ Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
     #endif
 	
 	if (pSC->m_bCtxLeft && pSC->m_bCtxTop && pSC->m_bSecondary == FALSE
-		&& pSC->m_param.bTranscode == FALSE) { // write packet headers
+		&& pSC->m_param.bTranscode == FALSE) { // write packet headers						
 		U8 pID = (U8)((pSC->cTileRow * (pSC->WMISCP.cNumOfSliceMinus1V + 1)
 			+ pSC->cTileColumn) & 0x1F);
 
+		if(pSC->WMISCP.bAdaptiveQP){
+			finalizeQPMatrix(pSC->qpMatrix);
+			printQPMatrix(pSC->qpMatrix);
+		}
+	
 		if (pSC->WMISCP.bfBitstreamFormat == SPATIAL) {
 			writePacketHeader(pContext->m_pIODC, 0, pID);
 			if (pSC->m_param.bTrimFlexbitsFlag)
@@ -2179,6 +2185,7 @@ Int ImageStrEncCtrlInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	
 	//YD added
 	pSC->pTransformedImage = pSC0->pTransformedImage;
+	pSC->qpMatrix = pSC0->qpMatrix;
 	//================================================
     *pctxSCrc = (CTXSTRCODEC) pSC;
     
@@ -2462,6 +2469,7 @@ Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	
 	//YD added
 	pSC->pTransformedImage = pSC0->pTransformedImage;
+	pSC->qpMatrix = pSC0->qpMatrix;
 	//clean pSC0
 	if (sizeof(*pSC0) != pSC->cbStruct)
 		return ICERR_ERROR;

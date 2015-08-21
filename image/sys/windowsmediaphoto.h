@@ -376,6 +376,7 @@ typedef struct tagCWMIStrCodecParam {
 	U8 uiDefaultQPIndexAlpha;
 	//YD added
 	float fltCRatio;
+	void * qpMatrix;
 
 	COLORFORMAT cfColorFormat;
 	BITDEPTH bdBitDepth;
@@ -431,8 +432,8 @@ typedef struct tagCWMImageBufferInfo {
 } CWMImageBufferInfo;
 /****************************************************************/
 /* Encode API                                                   */
-/****************************************************************/EXTERN_C Int ImageStrEncInit(
-		CWMImageInfo* pII, CWMIStrCodecParam *pSCP, CTXSTRCODEC* pctxSC);
+/****************************************************************/
+EXTERN_C Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP, CTXSTRCODEC* pctxSC);
 EXTERN_C Int ImageStrEncEncode(CTXSTRCODEC ctxSC, const CWMImageBufferInfo* pBI);
 EXTERN_C Int ImageStrEncTerm(CTXSTRCODEC ctxSC);
 
