@@ -1,7 +1,7 @@
 //*******************************************************************
 // File: image/sys/strAdaptiveQP.c
 // Author: YD Liu
-// Created: Augest 1 2015
+// Created: August 1 2015
 // Comment: kit of Adaptive QP
 //*******************************************************************
 
@@ -37,6 +37,7 @@ void defaultQPMatrix(QPMatrix * qpMatrix){
 	qpMatrix->iLPNum=16;
 	qpMatrix->iHPNum=16;
 	qpMatrix->iDCQP=1;
+	qpMatrix->tempQP = 1;
 	int i;
 	for(i=0;i<qpMatrix->iLPNum;i++){
 		qpMatrix->iLPQP[i]=i*16+1;
@@ -67,32 +68,78 @@ int seachQP(int* qps, int num, int qp){
 float fitLinearWithTempCRT(CWMImageStrCodec * pSC, float crt){
 	QPMatrix* qpMatrix = (QPMatrix*)pSC->qpMatrix;
 	float qp;
-	float a,b,c,d;
+	float a,b,crttmp;
 	int bits=pSC->WMII.cBitsPerUnit;
 	a = fitLinearModel(bits, crt, 'a');
 	b = fitLinearModel(bits, crt, 'b');
-	c = fitLinearModel(bits, crt, 'c');
-	d = fitLinearModel(bits, crt, 'd');
-	crt = fitLinearModel(bits, crt, 0);
+	crttmp = fitLinearModel(bits, crt, 0);
 
-	qp = a*crt + b*sqrt(crt) + c + (float)qpMatrix->iDCQP
-	    -(a*qpMatrix->fltCRatio + b*sqrt(qpMatrix->fltCRatio) + c);
-				
+	if(crt==crttmp){
+		qp = a*crt + b*sqrt(crt) + (float)qpMatrix->iDCQP
+	    	-(a*qpMatrix->fltCRatio + b*sqrt(qpMatrix->fltCRatio));
+	}
+	else{
+		float qptmp=a*crttmp + b*sqrt(crttmp) + (float)qpMatrix->iDCQP
+	    			-(a*qpMatrix->fltCRatio + b*sqrt(qpMatrix->fltCRatio));
+		qp=(255-qptmp)/(200-crttmp)*(crt-crttmp)+qptmp;
+	}	
 	qp=(qp>255)?255:((qp<1)?1:qp);
 	//printf("%d %.4f %.4f %.4f %.4f %.4f %.4f\n",bits,a,b,c,d,crt,qp);
 	return qp;
 }
 
-void updateQPsWithInterval(int* qps, int num, int qp, int inv){
-	inv = inv>15 ? 15 : (inv<1 ? 1 : inv);
-	int half1,half2,cqp,i;
-	const float pct=0.5;
-	half1=(int)((float)((num-1)*inv+1)*pct+0.5);
-	half2=(num-1)*inv-half1;
-	cqp = qp+half2>255 ? 255 - half2 : (qp-half1<1 ? 1 + half1 : qp);
-	qps[0]=1;
-	for(i=1;i<num;i++){
-		qps[i]=cqp-half1+i*inv;
+void distributeQPs(int* qps, int num, int qp, int method, float par){
+	switch(method){ //0:uniform 1:interval 2:curve
+		case 0:{
+			int i;
+			for(i=0;i<num;i++){
+				qps[i]=254/(num-1)*i+1;
+			}
+		}
+		break;
+		case 1:{
+			int inv=(int)(0.0003*(float)qp*(float)qp-0.0192*(float)qp+1) + (int)par;
+			inv = inv>15 ? 15 : (inv<1 ? 1 : inv);
+			int half1,half2,cqp,i;
+			const float pct=0.5;
+			half1=(int)((float)((num-1)*inv+1)*pct+0.5);
+			half2=(num-1)*inv-half1;
+			cqp = qp+half2>255 ? 255 - half2 : (qp-half1<1 ? 1 + half1 : qp);
+			qps[0]=1;
+			for(i=1;i<num-1;i++){
+				qps[i]=cqp-half1+i*inv;
+			}
+			qps[num-1]=255;
+		}
+		break;
+		case 2:{
+			float t=(par>254.0/((float)num-1.0))?254.0/((float)num-1.0):(par<1)?1:par;
+			int m=(int)(((float)qp-1.0)*((float)num-1.0)/254.0);
+
+			float x1,y1,x2,y2,x3,y3,x4,y4;
+			float a1,b1,c1,a2,b2,c2;
+			int i;
+			
+			x1=m-3<1?1.0:m-3.0; y1=(float)qp+(x1-(float)m)*t;
+			x2=0; y2=1.0;
+			a1=(y1-y2+(x2-x1)*t)/(x1*x1-x2*x2+2*x1*(x2-x1));
+			b1=t-2*a1*x1;
+			c1=y1-a1*x1*x1-b1*x1;
+			
+			x3=m+3>num-1?(float)num-1:(float)m+3; y3=(float)qp+(x3-(float)m)*t;
+			x4=(float)num-1.0; y4=255.0;
+			a2=(y3-y4+(x4-x3)*t)/(x3*x3-x4*x4+2*x3*(x4-x3));
+			b2=t-2*a2*x3;
+			c2=y3-a2*x3*x3-b2*x3;
+				
+			for(i=0;i<num;i++){
+				if(i<x1) qps[i]=(int)(a1*i*i+b1*i+c1);
+				else if(i>x3) qps[i]=(int)(a2*i*i+b2*i+c2);
+				else qps[i]=(int)(qp+(i-m)*t);
+				qps[i]=(qps[i]<1)?1:((qps[i]>255)?255:qps[i]);
+			}
+		}
+		break;
 	}
 }
 
@@ -130,6 +177,7 @@ QPMatrix* createQPMatrix(CWMImageStrCodec * pSC){
 	qpMatrix->iLPNum=16;
 	qpMatrix->iHPNum=16;
 	qpMatrix->iDCQP=1;
+	qpMatrix->tempQP = 1;
 	qpMatrix->iLPQP=(int*)malloc(qpMatrix->iLPNum*sizeof(int));
 	qpMatrix->iHPQP=(int*)malloc(qpMatrix->iHPNum*sizeof(int));
 	int i;
@@ -151,6 +199,8 @@ void adpativeMBQP(CWMImageStrCodec * pSC){
 	const int MBindex = (pSC->cRow-1)*pSC->cmbWidth+pSC->cColumn-1;
 	int* pLPQP = qpMatrix->pLPQPMatrix+MBindex;
 	int* pHPQP = qpMatrix->pHPQPMatrix+MBindex;
+	int* pLPQPs = qpMatrix->iLPQP;
+	int* pHPQPs = qpMatrix->iHPQP;
 	
 	if(MBindex){
 		const float MBpercent = ((float) MBindex + 1.0)
@@ -163,27 +213,38 @@ void adpativeMBQP(CWMImageStrCodec * pSC){
 			cCurrBits += pSC->m_ppBitIO[k]->cBitsCounter;
 		}
 		const float fltCRatio = qpMatrix->fltCRatio;
-		const float fltRestCRatio = (float) cRawBits * (1.0 - MBpercent)
-									/((float) cRawBits / fltCRatio - (float) cCurrBits);
+		float fltRestCRatio = (float) cRawBits * (1.0 - MBpercent)
+							/((float) cRawBits / fltCRatio - (float) cCurrBits);
+		if(fltRestCRatio<=0)fltRestCRatio=INF;
 									
-		int tempQP=(int) (fitLinearWithTempCRT (pSC, fltRestCRatio));
-		*pLPQP = seachQP(qpMatrix->iLPQP, qpMatrix->iLPNum, tempQP);
-		*pHPQP = seachQP(qpMatrix->iHPQP, qpMatrix->iHPNum, tempQP);
-	
-		//printf("%d %d %d %.2f %.2f %d\n",MBindex,*pLPQP,*pHPQP,fltCRatio,fltRestCRatio,tempQP);
+		//int tempQP=(int) (fitLinearWithTempCRT (pSC, fltRestCRatio));
+
+		//if(abs(fltRestCRatio - fltCRatio)>1) qpMatrix->tempQP=(int) (fitLinearWithTempCRT (pSC, fltRestCRatio));
+		if(fltRestCRatio < fltCRatio && fltRestCRatio <= qpMatrix->fltRestCRatio) qpMatrix->tempQP-=1;
+		else if (fltRestCRatio > fltCRatio && fltRestCRatio >= qpMatrix->fltRestCRatio) qpMatrix->tempQP+=5;
+		qpMatrix->tempQP=(qpMatrix->tempQP>255)?255:(qpMatrix->tempQP<1)?1:qpMatrix->tempQP;
+
+		*pLPQP = seachQP(qpMatrix->iLPQP, qpMatrix->iLPNum, qpMatrix->tempQP)+(fltRestCRatio > fltCRatio);
+		*pHPQP = seachQP(qpMatrix->iHPQP, qpMatrix->iHPNum, qpMatrix->tempQP)+(fltRestCRatio > fltCRatio);
+		*pLPQP = (*pLPQP >= qpMatrix->iLPNum)?qpMatrix->iLPNum-1:(*pLPQP < 0)? 0:*pLPQP;
+		*pHPQP = (*pHPQP >= qpMatrix->iHPNum)?qpMatrix->iHPNum-1:(*pHPQP < 0)? 0:*pHPQP;
+		qpMatrix->fltRestCRatio = fltRestCRatio;
+		//printf("%d %.2f %d %d %.2f %.2f %d %d %d\n",MBindex,MBpercent,*pLPQP,*pHPQP,fltCRatio,fltRestCRatio,qpMatrix->tempQP,pLPQPs[*pLPQP],pHPQPs[*pHPQP]);
 	}else{
-		*pLPQP = seachQP(qpMatrix->iLPQP, qpMatrix->iLPNum, qpMatrix->iDCQP);
-		*pHPQP = seachQP(qpMatrix->iHPQP, qpMatrix->iHPNum, qpMatrix->iDCQP);
-		//printf("%d %d %d\n",MBindex,*pLPQP,*pHPQP);
+		qpMatrix->tempQP = qpMatrix->iDCQP;
+		*pLPQP = seachQP(qpMatrix->iLPQP, qpMatrix->iLPNum, qpMatrix->tempQP);
+		*pHPQP = seachQP(qpMatrix->iHPQP, qpMatrix->iHPNum, qpMatrix->tempQP);
+		//printf("%d %d %d %d %d\n",MBindex,*pLPQP,*pHPQP,pLPQPs[*pLPQP],pHPQPs[*pHPQP]);
 	}
+	
 }
 
 void updateQPs(QPMatrix * qpMatrix, int qp){
 	qp=(qp>255)?255:(qp<1)?1:qp;
+	qpMatrix->tempQP = qp;
 	qpMatrix->iDCQP = qp;
-	int inv=(int)(0.0003*(float)qp*(float)qp-0.0192*(float)qp+1);
-	updateQPsWithInterval(qpMatrix->iLPQP, qpMatrix->iLPNum, qp, inv);
-	updateQPsWithInterval(qpMatrix->iHPQP, qpMatrix->iHPNum, qp, inv+1);
+	distributeQPs(qpMatrix->iLPQP, qpMatrix->iLPNum, qp, 2, 1);
+	distributeQPs(qpMatrix->iHPQP, qpMatrix->iHPNum, qp, 2, 2);
 }
 
 void finalizeQPMatrix(QPMatrix * qpMatrix){

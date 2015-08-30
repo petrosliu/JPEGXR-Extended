@@ -1,7 +1,7 @@
 //*******************************************************************
 // File: image/sys/strAdaptiveQP.h
 // Author: YD Liu
-// Created: Augest 1 2015
+// Created: August 1 2015
 // Comment: kit of Adaptive QP
 //*******************************************************************
 
@@ -35,6 +35,8 @@ typedef struct tagQPMatrix{
 	int* iHPQP;
 	int* pLPQPMatrix;
 	int* pHPQPMatrix;
+	int tempQP;
+	float fltRestCRatio;
 } QPMatrix;
 
 

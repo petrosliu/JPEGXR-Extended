@@ -975,13 +975,7 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 
 	const CWMImageStrCodec* pSCrc = (CWMImageStrCodec*) pIE->WMP.ctxSCrc;
 	CWMImageStrCodec* pSC = (CWMImageStrCodec*) pIE->WMP.ctxSC;
-		
-	pIE->WMP.wmiSCP.qpMatrix = (void*) createQPMatrix(pSC);
-	pSC->qpMatrix = pIE->WMP.wmiSCP.qpMatrix;
-	QPMatrix* qpMatrix = pSC->qpMatrix;
-	qpMatrix->fltCRatio = pIE->WMP.wmiSCP.fltCRatio;
-	if(pSC->WMISCP.bAdaptiveQP) defaultQPMatrix(qpMatrix);
-	
+
 	QPCRList* list = createQPCRList(FITLINEAR);
 	
 	list->crt = pIE->WMP.wmiSCP.fltCRatio;
@@ -995,18 +989,19 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 
 	while (!isTargetReached(list)){
 		qptmp = generateNextQP(list);
-		if(pSC->WMISCP.bAdaptiveQP) updateQPs(qpMatrix, qptmp);
 		
 		Call(PKImageEncode_ControlContent_Suit(qptmp, pIE, PI, cLine, pbPixels, cbStride));
 		crtmp = (float) list->imageSize * (float) list->bits / (float)(*(list->pNumOfBits));
 		updateList(list,qptmp,crtmp);
 	}
 
+	// if(pSC->WMISCP.bAdaptiveQP) finalizeQPMatrix(qpMatrix);
+	
 	*pQP = list->finalQP;
 #ifdef RATECONTROL_TEST_YD 
 	printQPCRList(list);
 #endif
-
+	//printf("%d",*pQP);
 	freeQPCRList(&list);
 	free(pSCrc);
 Cleanup: return err;

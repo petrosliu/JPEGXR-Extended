@@ -12,41 +12,36 @@
 //*******************************************************************
 float fitLinearModel(int bits, float crt, int index){
 	crt=(crt>0)?crt:1;
-	float a,b,c,d;
+	float a,b,c;
 		switch(bits){
 			case 8:
 				if(crt>24.7301) crt=24.7301;
 				a=-4.4413;
 				b=44.1726;
-				c=-41.4936;
-				d=-43;
+				c=-84.4936;
 				break;
 			case 16:
 				if(crt>16.1765) crt=16.1765;
 				a=-15.8981;
 				b=127.8816;
-				c=-79.9908;
-				d=-53;
+				c=-132.9908;
 				break;
 			case 32:
 				if(crt>13.5083) crt=13.5083;
 				a=-34.9914;
 				b=257.2141;
-				c=-215.7579;
-				d=-60;
+				c=-275.7579;
 				break;
 			default:
 				if(crt>15.0475) crt=15.0475;
 				a=-18.4436;
 				b=143.0894;
-				c=-112.4141;
-				d=-150;
+				c=-262.4141;
 				break;
 		}
 	if(index=='a') return a;
 	if(index=='b') return b;
 	if(index=='c') return c;
-	if(index=='d') return d;
 	return crt;
 }
 
@@ -85,20 +80,19 @@ float fitLinear(QPCRList* list){
 			}
 		}
 	}else{	
-		float a,b,c,d;
+		float a,b,c;
 		float crt=list->crt;
 		a = fitLinearModel(list->bits, crt, 'a');
 		b = fitLinearModel(list->bits, crt, 'b');
 		c = fitLinearModel(list->bits, crt, 'c');
-		d = fitLinearModel(list->bits, crt, 'd');
 		crt = fitLinearModel(list->bits, crt, 0);
 		
 		if(list->numOfNodes){
 			QPCRNode* head=list->head;
-			qp = a*crt + b*sqrt(crt) + c + (float)(head->qp)
-			    -(a*(float)(head->cr) + b*sqrt((float)(head->cr)) + c);
+			qp = a*crt + b*sqrt(crt) + (float)(head->qp)
+			    -(a*(float)(head->cr) + b*sqrt((float)(head->cr)));
 		}else{
-			qp = a*crt + b*sqrt(crt) + c + d;
+			qp = a*crt + b*sqrt(crt) + c;
 		}
 	}
 	return qp;
@@ -505,7 +499,9 @@ void printQPCRList(QPCRList* list){
 				(float) list->imageSize * (float) list->bits / 8);
 		printf("================================================================\n");
 	}else{		
-		printf("%.2f\t%d\t%d\t%d\t%d",list->crt,list->finalQP,list->imageSize,list->bits,list->numOfNodes);
+		printf("%.2f\t%d\t%d\t%d\t%d\t%.0f\t%.0f",list->crt,list->finalQP,list->imageSize,list->bits,list->numOfNodes,
+			(float) list->imageSize * (float) list->bits / list->crt / 8,
+			(float) (*(list->pNumOfBits)) / 8);
 		if(!evaluateQPCRList(list)) printf("\tINEFF");
 		printf("\n");
 	}
