@@ -1897,7 +1897,7 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
     pSC->pIOHeader = (BitIOInfo*) pb;
     
     //================================================
-    if(pSC->WMISCP.bAdaptiveQP) {
+    if(pSC->WMISCP.bAdaptiveQP && pSC->WMISCP.uiDefaultQPIndex == 255) {
 		float a,b,c,qp;
 		float crt=pSCP->fltCRatio;
 		a = fitLinearModel(pSC->WMII.cBitsPerUnit, crt, 'a');
@@ -1923,7 +1923,7 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 			pSC->qpMatrix= pSCP->qpMatrix;
 			QPMatrix* qpMatrix = pSC->qpMatrix;
 			qpMatrix->fltCRatio = pSCP->fltCRatio / (1 - RATETOL/4);
-			defaultQPMatrix(qpMatrix);
+			//defaultQPMatrix(qpMatrix);
 		}
 		updateQPs(pSC->qpMatrix, pSC->WMISCP.uiDefaultQPIndex);
 	}
@@ -2610,7 +2610,7 @@ Int ImageStrEncTerm(CTXSTRCODEC ctxSC) {
     //================================
 
 	pSC->ProcessBottomRight(pSC);
-#if 1
+#if 0
 	if(pSC->WMISCP.bAdaptiveQP) {
 		QPMatrix* qpMatrix = pSC->qpMatrix;
 		int imageSize = pSC->WMII.cWidth * pSC->WMII.cHeight;

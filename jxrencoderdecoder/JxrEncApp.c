@@ -137,7 +137,7 @@ void WmpEncAppInitDefaultArgs(WMPENCAPPARGS* args) {
 	args->wmiSCP.uiDefaultQPIndex = 1;
 	args->wmiSCP.uiDefaultQPIndexAlpha = 1;
 
-	args->fltImageQuality = 1.f;
+	args->fltImageQuality = 0.f;
 	
 	//YD added
 	args->wmiSCP.bAdaptiveQP = FALSE;
@@ -275,15 +275,12 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				break;
 
 			case 'q': {
-				if(idxQR == -1){
 					args->fltImageQuality = (float) atof(argv[i]);
 					pMyArgs->quant = (unsigned char) atoi(argv[i]);
 					if (args->fltImageQuality < 0.f
 							|| args->fltImageQuality > 255.f)
 						Call(WMP_errInvalidArgument);
 					pMyArgs->rate = (float) pMyArgs->bpi; //YD added default rate
-					idxQR = 0;
-				} else Call(WMP_errInvalidArgument);
 			}
 				break;
 				
@@ -412,8 +409,13 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 	//	convert2int(&args,pMyArgs);	
 	
 	//YD added	
-	if(idxQR == 2) pMyArgs->rate = (float) pMyArgs->bpi / pMyArgs->rate;
-	if(idxQR == -1) args->wmiSCP.bAdaptiveQP = FALSE;
+	if(idxQR == 2){
+		pMyArgs->rate = (float) pMyArgs->bpi / pMyArgs->rate;
+		idxQR = 1;
+	}
+	if(args->wmiSCP.bAdaptiveQP == TRUE && idxQR != 1) Call(WMP_errInvalidArgument);
+	if(idxQR == 1 && args->fltImageQuality != 0.f && args->wmiSCP.bAdaptiveQP == FALSE) Call(WMP_errInvalidArgument);
+	
 	
 	FailIf((int) sizeof2(pixelFormat) <= idxPF, WMP_errUnsupportedFormat);
 	if (idxPF >= 0)
@@ -468,10 +470,11 @@ ERR connectWmpEncAppArgsAndARGInputs(WMPENCAPPARGS* args, ARGInputs* pMyArgs)
 	args->fltImageCRatio = ((float)pMyArgs->bpi/pMyArgs->rate>1.0)?
 							(float)pMyArgs->bpi/pMyArgs->rate:
 							1.0;
-	if(args->fltImageCRatio==1.0){
+	if(args->fltImageQuality != 0.f || args->fltImageCRatio ==1.0){
 		args->wmiSCP.uiDefaultQPIndex = pMyArgs->quant;
 		args->fltImageQuality = pMyArgs->quant;
 	}else{
+		args->fltImageQuality == 1.f;
 		args->wmiSCP.uiDefaultQPIndex = 255;
 		args->fltImageQuality = 255;
 	}
