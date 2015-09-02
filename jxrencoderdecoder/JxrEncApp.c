@@ -141,6 +141,7 @@ void WmpEncAppInitDefaultArgs(WMPENCAPPARGS* args) {
 	
 	//YD added
 	args->wmiSCP.bAdaptiveQP = FALSE;
+	args->wmiSCP.bExtendedJXR = FALSE;
 	args->wmiSCP.fltCRatio = 1.0;
 	args->fltImageCRatio = 1.0;
 	
@@ -234,6 +235,10 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 		//YD added
 		case 'A':
 			args->wmiSCP.bAdaptiveQP = TRUE;
+			break;
+			
+		case 'E':
+			args->wmiSCP.bExtendedJXR = TRUE;
 			break;
 			
 		default:
@@ -415,7 +420,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 	}
 	if(args->wmiSCP.bAdaptiveQP == TRUE && idxQR != 1) Call(WMP_errInvalidArgument);
 	if(idxQR == 1 && args->fltImageQuality != 0.f && args->wmiSCP.bAdaptiveQP == FALSE) Call(WMP_errInvalidArgument);
-	
+	if(args->wmiSCP.bExtendedJXR && !args->wmiSCP.bAdaptiveQP)  Call(WMP_errInvalidArgument);
 	
 	FailIf((int) sizeof2(pixelFormat) <= idxPF, WMP_errUnsupportedFormat);
 	if (idxPF >= 0)

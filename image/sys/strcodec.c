@@ -851,7 +851,7 @@ Int allocateQuantizer(CWMIQuantizer * pQuantizer[MAX_CHANNELS], size_t cChannel,
 		size_t cQP) {
 	size_t iCh;
 
-	if (cQP > 16 || cChannel > MAX_CHANNELS)
+	if ((cQP > 16 || cChannel > MAX_CHANNELS) && cQP!=255)
 		return ICERR_ERROR;
 	pQuantizer[0] = (CWMIQuantizer *) malloc(
 			cQP * sizeof(CWMIQuantizer) * cChannel);
@@ -920,6 +920,7 @@ Void useLPQuantizer(CWMImageStrCodec * pSC, size_t cQP, size_t iTile) {
 }
 
 U8 dquantBits(U8 cQP) {
+	if(cQP==255) return 8;
 	return (cQP < 2 ? 0 : (cQP < 4 ? 1 : (cQP < 6 ? 2 : (cQP < 10 ? 3 : 4))));
 }
 

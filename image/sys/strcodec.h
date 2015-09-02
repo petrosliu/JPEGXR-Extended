@@ -294,8 +294,8 @@ typedef struct CWMITile {
 	Bool bUseDC;
 	Bool bUseLP;
 	U8 cChModeDC;
-	U8 cChModeLP[16];
-	U8 cChModeHP[16];
+	U8 cChModeLP[255];
+	U8 cChModeHP[255];
 } CWMITile;
 
 #ifdef ARMOPT_COLORCONVERSION_C

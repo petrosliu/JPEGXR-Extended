@@ -37,6 +37,7 @@ typedef struct tagQPMatrix{
 	int* pHPQPMatrix;
 	int tempQP;
 	float fltRestCRatio;
+	int bExtendedJXR;
 } QPMatrix;
 
 

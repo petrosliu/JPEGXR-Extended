@@ -34,16 +34,21 @@ void printQPMatrix(QPMatrix * qpMatrix){
 }
 
 void defaultQPMatrix(QPMatrix * qpMatrix){
-	qpMatrix->iLPNum=16;
-	qpMatrix->iHPNum=16;
+	if(qpMatrix->bExtendedJXR){
+		qpMatrix->iLPNum=255;
+		qpMatrix->iHPNum=255;
+	}else{
+		qpMatrix->iLPNum=16;
+		qpMatrix->iHPNum=16;
+	}
 	qpMatrix->iDCQP=1;
 	qpMatrix->tempQP = 1;
 	int i;
 	for(i=0;i<qpMatrix->iLPNum;i++){
-		qpMatrix->iLPQP[i]=i*16+1;
+		qpMatrix->iLPQP[i]=i+1;
 	}
 	for(i=0;i<qpMatrix->iHPNum;i++){
-		qpMatrix->iHPQP[i]=i*16+1;
+		qpMatrix->iHPQP[i]=i+1;
 	}
 	for(i=0;i<qpMatrix->iMBWid*qpMatrix->iMBHei;i++){
 		qpMatrix->pLPQPMatrix[i]=0;//rand()%qpMatrix->iLPNum;
@@ -174,8 +179,15 @@ QPMatrix* createQPMatrix(CWMImageStrCodec * pSC){
 	QPMatrix* qpMatrix=(QPMatrix*)malloc(sizeof(QPMatrix));
 	qpMatrix->iMBWid = (int)pSC->cmbWidth;
 	qpMatrix->iMBHei = (int)pSC->cmbHeight;
-	qpMatrix->iLPNum=16;
-	qpMatrix->iHPNum=16;
+	qpMatrix->bExtendedJXR = pSC->WMISCP.bExtendedJXR;
+	if(qpMatrix->bExtendedJXR){
+		qpMatrix->iLPNum=255;
+		qpMatrix->iHPNum=255;
+	}else{
+		qpMatrix->iLPNum=16;
+		qpMatrix->iHPNum=16;
+	}
+	
 	qpMatrix->iDCQP=1;
 	qpMatrix->tempQP = 1;
 	qpMatrix->iLPQP=(int*)malloc(qpMatrix->iLPNum*sizeof(int));
@@ -197,6 +209,8 @@ QPMatrix* createQPMatrix(CWMImageStrCodec * pSC){
 void adpativeMBQP(CWMImageStrCodec * pSC){
 	QPMatrix* qpMatrix = (QPMatrix*)pSC->qpMatrix;
 	const int MBindex = (pSC->cRow-1)*pSC->cmbWidth+pSC->cColumn-1;
+	const int isMBLeft = (MBindex % pSC->cmbWidth == 0);
+	const int isMBRight = ((MBindex + 1) % pSC->cmbWidth == 0);
 	int* pLPQP = qpMatrix->pLPQPMatrix+MBindex;
 	int* pHPQP = qpMatrix->pHPQPMatrix+MBindex;
 	int* pLPQPs = qpMatrix->iLPQP;
@@ -215,25 +229,34 @@ void adpativeMBQP(CWMImageStrCodec * pSC){
 		const float fltCRatio = qpMatrix->fltCRatio;
 		float fltRestCRatio = (float) cRawBits * (1.0 - MBpercent)
 							/((float) cRawBits / fltCRatio - (float) cCurrBits);
-		if(fltRestCRatio<=0)fltRestCRatio=INF;
-									
-		//int tempQP=(int) (fitLinearWithTempCRT (pSC, fltRestCRatio));
-
-		//if(abs(fltRestCRatio - fltCRatio)>1) qpMatrix->tempQP=(int) (fitLinearWithTempCRT (pSC, fltRestCRatio));
+		if(fltRestCRatio<=0) fltRestCRatio=INF;
+		
 		if(fltRestCRatio < fltCRatio && fltRestCRatio <= qpMatrix->fltRestCRatio) qpMatrix->tempQP-=1;
 		else if (fltRestCRatio > fltCRatio && fltRestCRatio >= qpMatrix->fltRestCRatio) qpMatrix->tempQP+=5;
 		qpMatrix->tempQP=(qpMatrix->tempQP>255)?255:(qpMatrix->tempQP<1)?1:qpMatrix->tempQP;
 
-		*pLPQP = seachQP(qpMatrix->iLPQP, qpMatrix->iLPNum, qpMatrix->tempQP)+(fltRestCRatio > fltCRatio);
-		*pHPQP = seachQP(qpMatrix->iHPQP, qpMatrix->iHPNum, qpMatrix->tempQP)+(fltRestCRatio > fltCRatio);
-		*pLPQP = (*pLPQP >= qpMatrix->iLPNum)?qpMatrix->iLPNum-1:(*pLPQP < 0)? 0:*pLPQP;
-		*pHPQP = (*pHPQP >= qpMatrix->iHPNum)?qpMatrix->iHPNum-1:(*pHPQP < 0)? 0:*pHPQP;
+		if(qpMatrix->bExtendedJXR){
+			*pLPQP = qpMatrix->tempQP;
+			*pHPQP = qpMatrix->tempQP;
+		}
+		else{
+			*pLPQP = seachQP(qpMatrix->iLPQP, qpMatrix->iLPNum, qpMatrix->tempQP)+(fltRestCRatio > fltCRatio);
+			*pHPQP = seachQP(qpMatrix->iHPQP, qpMatrix->iHPNum, qpMatrix->tempQP)+(fltRestCRatio > fltCRatio);
+			*pLPQP = (*pLPQP >= qpMatrix->iLPNum)?qpMatrix->iLPNum-1:(*pLPQP < 0)? 0:*pLPQP;
+			*pHPQP = (*pHPQP >= qpMatrix->iHPNum)?qpMatrix->iHPNum-1:(*pHPQP < 0)? 0:*pHPQP;
+		}
 		qpMatrix->fltRestCRatio = fltRestCRatio;
 		//printf("%d %.2f %d %d %.2f %.2f %d %d %d\n",MBindex,MBpercent,*pLPQP,*pHPQP,fltCRatio,fltRestCRatio,qpMatrix->tempQP,pLPQPs[*pLPQP],pHPQPs[*pHPQP]);
 	}else{
 		qpMatrix->tempQP = qpMatrix->iDCQP;
-		*pLPQP = seachQP(qpMatrix->iLPQP, qpMatrix->iLPNum, qpMatrix->tempQP);
-		*pHPQP = seachQP(qpMatrix->iHPQP, qpMatrix->iHPNum, qpMatrix->tempQP);
+		if(qpMatrix->bExtendedJXR){
+			*pLPQP = qpMatrix->iDCQP;
+			*pHPQP = qpMatrix->iDCQP;
+		}
+		else{
+			*pLPQP = seachQP(qpMatrix->iLPQP, qpMatrix->iLPNum, qpMatrix->iDCQP);
+			*pHPQP = seachQP(qpMatrix->iHPQP, qpMatrix->iHPNum, qpMatrix->iDCQP);
+		}
 		//printf("%d %d %d %d %d\n",MBindex,*pLPQP,*pHPQP,pLPQPs[*pLPQP],pHPQPs[*pHPQP]);
 	}
 	
@@ -248,6 +271,7 @@ void updateQPs(QPMatrix * qpMatrix, int qp){
 }
 
 void finalizeQPMatrix(QPMatrix * qpMatrix){
+	if(qpMatrix->bExtendedJXR) return;
 	const int mbNum=qpMatrix->iMBWid*qpMatrix->iMBHei;
 	finalizeQPs(qpMatrix->iLPQP, &qpMatrix->iLPNum,qpMatrix->pLPQPMatrix,mbNum);
 	finalizeQPs(qpMatrix->iHPQP, &qpMatrix->iHPNum,qpMatrix->pHPQPMatrix,mbNum);

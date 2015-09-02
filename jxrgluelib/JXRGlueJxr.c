@@ -1001,7 +1001,7 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 #ifdef RATECONTROL_TEST_YD 
 	printQPCRList(list);
 #endif
-	//printf("%d",*pQP);
+	printf("%d",*pQP);
 	freeQPCRList(&list);
 	free(pSCrc);
 Cleanup: return err;

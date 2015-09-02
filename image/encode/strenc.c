@@ -170,7 +170,9 @@ Int writeTileHeaderLP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 			if (pTile->bUseDC == TRUE)
 				useDCQuantizer(pSC, pSC->cTileColumn);
 			else {
-				putBit16(pIO, pTile->cNumQPLP - 1, 4);
+				if(!pSC->WMISCP.bExtendedJXR){
+					putBit16(pIO, pTile->cNumQPLP - 1, 4);
+				}
 				pTile->cBitsLP = dquantBits(pTile->cNumQPLP);
 				
 				for (i = 0; i < pTile->cNumQPLP; i++) {
@@ -184,8 +186,10 @@ Int writeTileHeaderLP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 					formatQuantizer(pTile->pQuantizerLP, pTile->cChModeLP[i],
 						pSC->m_param.cNumChannels, i, TRUE,
 						pSC->m_param.bScaledArith);
-					writeQuantizer(pTile->pQuantizerLP, pIO,
-						pTile->cChModeLP[i], pSC->m_param.cNumChannels, i);
+					if(!qpMatrix->bExtendedJXR){
+						writeQuantizer(pTile->pQuantizerLP, pIO,
+							pTile->cChModeLP[i], pSC->m_param.cNumChannels, i);
+					}
 				}
 			}
 		}
@@ -212,6 +216,8 @@ Int writeTileHeaderHP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 
 			//pTile->bUseLP = ((rand() & 1) == 0 ? TRUE : FALSE); // use LP quantizer?
 			pTile->bUseLP = FALSE;
+			if(pSC->WMISCP.bExtendedJXR) pTile->bUseLP = TRUE;
+			
 			putBit16(pIO, pTile->bUseLP == TRUE ? 1 : 0, 1);
 			pTile->cBitsHP = 0;
 
@@ -241,8 +247,10 @@ Int writeTileHeaderHP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 					formatQuantizer(pTile->pQuantizerHP, pTile->cChModeHP[i],
 						pSC->m_param.cNumChannels, i, FALSE,
 						pSC->m_param.bScaledArith);
-					writeQuantizer(pTile->pQuantizerHP, pIO,
-						pTile->cChModeHP[i], pSC->m_param.cNumChannels, i);
+					if(!qpMatrix->bExtendedJXR){
+						writeQuantizer(pTile->pQuantizerHP, pIO,
+							pTile->cChModeHP[i], pSC->m_param.cNumChannels, i);
+					}
 				}
 			}
 		}
@@ -437,11 +445,8 @@ Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 		}
 	}
 	
-	#if 0 //YD added
+	#if 1 //YD added
 	int k;
-	for (k = 0; k < pSC->cNumBitIO; k++) {
-		printf("%d ",pSC->m_ppBitIO[k]->cBitsUsed);
-	}
 	for (k = 0; k < pSC->cNumBitIO; k++) {
 		printf("%d ",pSC->m_ppBitIO[k]->cBitsCounter);
 	}
@@ -1102,7 +1107,11 @@ Int WriteImagePlaneHeader(CWMImageStrCodec * pSC) {
 	PUTBITS(pIO, (Int)pSC->m_param.bScaledArith, 1); // lossless mode
 
 	// subbands
-	PUTBITS(pIO, (U32)pSCP->sbSubband, 4);
+	if(!pSC->WMISCP.bExtendedJXR){
+		PUTBITS(pIO, (U32)pSCP->sbSubband, 4);
+	}else{
+		PUTBITS(pIO, (U32)pSCP->sbSubband + 4, 4);
+	}
 
 	// color parameters
 	switch (pSC->m_param.cfColorFormat) {
@@ -1488,29 +1497,6 @@ Int StrEncInit(CWMImageStrCodec* pSC) {
 		setBitIOPointers(pSC);
 		WriteWMIHeader(pSC);
 	}
-
-#if 0
-	printf("uiDefaultQPIndex\t%d\n",pSC->WMISCP.uiDefaultQPIndex);
-	printf("uiDefaultQPIndexYLP\t%d\n",pSC->WMISCP.uiDefaultQPIndexYLP);
-	printf("uiDefaultQPIndexYHP\t%d\n",pSC->WMISCP.uiDefaultQPIndexYHP);
-	printf("uiDefaultQPIndexU\t%d\n",pSC->WMISCP.uiDefaultQPIndexU);
-	printf("uiDefaultQPIndexULP\t%d\n",pSC->WMISCP.uiDefaultQPIndexULP);
-	printf("uiDefaultQPIndexUHP\t%d\n",pSC->WMISCP.uiDefaultQPIndexUHP);
-	printf("uiDefaultQPIndexV\t%d\n",pSC->WMISCP.uiDefaultQPIndexV);
-	printf("uiDefaultQPIndexVLP\t%d\n",pSC->WMISCP.uiDefaultQPIndexVLP);
-	printf("uiDefaultQPIndexVHP\t%d\n",pSC->WMISCP.uiDefaultQPIndexVHP);
-	printf("uiDefaultQPIndexAlpha\t%d\n",pSC->WMISCP.uiDefaultQPIndexAlpha);
-	
-	printf("iQPIndexY\t%d\n",iQPIndexY);
-	printf("iQPIndexYLP\t%d\n",iQPIndexYLP);
-	printf("iQPIndexYHP\t%d\n",iQPIndexYHP);
-	printf("iQPIndexU\t%d\n",iQPIndexU);
-	printf("iQPIndexULP\t%d\n",iQPIndexULP);
-	printf("iQPIndexUHP\t%d\n",iQPIndexUHP);
-	printf("iQPIndexV\t%d\n",iQPIndexV);
-	printf("iQPIndexVLP\t%d\n",iQPIndexVLP);
-	printf("iQPIndexVHP\t%d\n",iQPIndexVHP);
-#endif
 
 	return ICERR_OK;
 }

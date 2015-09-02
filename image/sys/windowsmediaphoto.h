@@ -417,6 +417,7 @@ typedef struct tagCWMIStrCodecParam {
 	int32_t* pTransformedImage;
 	U32 cNumOfBits;
 	Bool bAdaptiveQP;
+	Bool bExtendedJXR;
 	
 } CWMIStrCodecParam;
 

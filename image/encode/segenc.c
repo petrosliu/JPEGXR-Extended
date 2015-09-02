@@ -140,13 +140,14 @@ Int EncodeMacroblockDC(CWMImageStrCodec *pSC, CCodingContext *pContext,
 		QPMatrix* qpMatrix=(QPMatrix*)pSC->qpMatrix;
 		if(pSC->WMISCP.bAdaptiveQP) adpativeMBQP(pSC);
 		pMBInfo->iQIndexLP = (U8) (
-				pTile->cNumQPLP > 1 ? 
+				pTile->cNumQPLP > 1 ?
 				qpMatrix->pLPQPMatrix[(pSC->cRow-1)*pSC->cmbWidth+pSC->cColumn-1]
 				 : 0);
 		pMBInfo->iQIndexHP = (U8) (
-				pTile->cNumQPHP > 1 ? 
+				pTile->cNumQPHP > 1 ?
 				qpMatrix->pHPQPMatrix[(pSC->cRow-1)*pSC->cmbWidth+pSC->cColumn-1]
 				 : 0);
+		printf("%d %d ",pMBInfo->iQIndexLP,pMBInfo->iQIndexHP);
 	}
 	if (pTile->cBitsHP == 0 && pTile->cNumQPHP > 1){ // use LP QP
 		pMBInfo->iQIndexHP = pMBInfo->iQIndexLP;

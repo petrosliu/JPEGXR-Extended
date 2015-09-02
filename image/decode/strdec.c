@@ -131,7 +131,7 @@ Int readTileHeaderLP(CWMImageStrCodec * pSC, BitIOInfo * pIO)
 {
     if(pSC->WMISCP.sbSubband != SB_DC_ONLY && (pSC->m_param.uQPMode & 2) != 0){ // not LP uniform
         CWMITile * pTile = pSC->pTile + pSC->cTileColumn;
-        U8 i;
+        U8 i,j;
 
         pTile->bUseDC = (getBit16(pIO, 1) == 1 ? TRUE : FALSE);
         pTile->cBitsLP = 0;
@@ -146,14 +146,25 @@ Int readTileHeaderLP(CWMImageStrCodec * pSC, BitIOInfo * pIO)
             useDCQuantizer(pSC, pSC->cTileColumn);
         }
         else{
-            pTile->cNumQPLP = (U8)getBit16(pIO, 4) + 1;
+            if(!pSC->WMISCP.bExtendedJXR){
+                pTile->cNumQPLP = (U8)getBit16(pIO, 4) + 1;
+            }else{
+                pTile->cNumQPLP = (U8)255;
+            }
             pTile->cBitsLP = dquantBits(pTile->cNumQPLP);
             
             if(allocateQuantizer(pTile->pQuantizerLP, pSC->m_param.cNumChannels, pTile->cNumQPLP) != ICERR_OK)
                 return ICERR_ERROR;
 
             for(i = 0; i < pTile->cNumQPLP; i ++){
-                pTile->cChModeLP[i] = readQuantizer(pTile->pQuantizerLP, pIO, pSC->m_param.cNumChannels, i);
+                if(!pSC->WMISCP.bExtendedJXR){
+                    pTile->cChModeLP[i] = readQuantizer(pTile->pQuantizerLP, pIO, pSC->m_param.cNumChannels, i);
+                }else{
+                    pTile->cChModeLP[i] = (U8) 0;
+                    for (j = 0; j < pSC->m_param.cNumChannels; j++){
+						pTile->pQuantizerLP[j][i].iIndex = (U8)i+1;
+					}
+                }
                 formatQuantizer(pTile->pQuantizerLP, pTile->cChModeLP[i], pSC->m_param.cNumChannels, i, TRUE, pSC->m_param.bScaledArith);
             }
         }
@@ -189,7 +200,9 @@ Int readTileHeaderHP(CWMImageStrCodec * pSC, BitIOInfo * pIO)
                 return ICERR_ERROR;
 
             for(i = 0; i < pTile->cNumQPHP; i ++){
-                pTile->cChModeHP[i] = readQuantizer(pTile->pQuantizerHP, pIO, pSC->m_param.cNumChannels, i);
+                if(!pSC->WMISCP.bExtendedJXR){
+                    pTile->cChModeHP[i] = readQuantizer(pTile->pQuantizerHP, pIO, pSC->m_param.cNumChannels, i);
+                }
                 formatQuantizer(pTile->pQuantizerHP, pTile->cChModeHP[i], pSC->m_param.cNumChannels, i, FALSE, pSC->m_param.bScaledArith);
             }
         }
@@ -2847,8 +2860,11 @@ Int ReadImagePlaneHeader(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 
     // subbands
     pSCP->sbSubband = getBit32_SB(pSB, 4);
-
-// color parameters
+    if(pSCP->sbSubband > 3){
+        pSCP->sbSubband -= 4;
+        pSCP->bExtendedJXR = TRUE;
+    }
+    // color parameters
     switch (pSC->cfColorFormat) {
         case Y_ONLY:
             pSC->cNumChannels = 1;
