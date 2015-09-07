@@ -147,7 +147,7 @@ Int EncodeMacroblockDC(CWMImageStrCodec *pSC, CCodingContext *pContext,
 				pTile->cNumQPHP > 1 ?
 				qpMatrix->pHPQPMatrix[(pSC->cRow-1)*pSC->cmbWidth+pSC->cColumn-1]
 				 : 0);
-		printf("%d %d ",pMBInfo->iQIndexLP,pMBInfo->iQIndexHP);
+		//printf("%d %d ",pMBInfo->iQIndexLP,pMBInfo->iQIndexHP);
 	}
 	if (pTile->cBitsHP == 0 && pTile->cNumQPHP > 1){ // use LP QP
 		pMBInfo->iQIndexHP = pMBInfo->iQIndexLP;

@@ -49,7 +49,7 @@ CFLAGS=-I. -Icommon/include -I$(DIR_SYS) -D__ANSI__ -w -O
 ## Common files
 ##
 
-OBJ_SYS=adapthuff.o image.o strcodec.o strPredQuant.o strTransform.o perfTimerANSI.o strRateControl.o strAdaptiveQP.o
+OBJ_SYS=adapthuff.o image.o strcodec.o strPredQuant.o strTransform.o perfTimerANSI.o strRateControl.o strAdaptiveQP.o snr.o
 
 $(OBJ_SYS):
 	$(CC) $(CFLAGS) -c $(DIR_SYS)/$*.c
@@ -137,11 +137,21 @@ $(DECAPP): $(LIBRARIES)
 
 ##--------------------------------
 ##
+## SNR app files
+##
+
+OBJ_SNR = snr.o
+SNRAPP = snr
+
+$(SNRAPP):$(OBJ_SNR)
+	$(CC) $(DIR_SYS)/$(SNRAPP).c -o $(SNRAPP) $(CFLAGS) -I $(LIBS)
+##--------------------------------
+##
 ## JPEG XR library
 ##
-all: $(ENCAPP) $(DECAPP)
+all: $(ENCAPP) $(DECAPP) $(SNRAPP)
 
 clean:
-	rm -rf *App *.o libj*.a 
+	rm -rf *.o libj*.a 
 
 ##

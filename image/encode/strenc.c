@@ -445,7 +445,7 @@ Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 		}
 	}
 	
-	#if 1 //YD added
+	#if 0 //YD added
 	int k;
 	for (k = 0; k < pSC->cNumBitIO; k++) {
 		printf("%d ",pSC->m_ppBitIO[k]->cBitsCounter);
@@ -1908,7 +1908,7 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 			pSCP->qpMatrix = (void*) createQPMatrix(pSC);
 			pSC->qpMatrix= pSCP->qpMatrix;
 			QPMatrix* qpMatrix = pSC->qpMatrix;
-			qpMatrix->fltCRatio = pSCP->fltCRatio / (1 - RATETOL/4);
+			qpMatrix->fltCRatio = pSCP->fltCRatio / (1 + RATETOL/4*3);
 			//defaultQPMatrix(qpMatrix);
 		}
 		updateQPs(pSC->qpMatrix, pSC->WMISCP.uiDefaultQPIndex);
@@ -2470,6 +2470,32 @@ Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	
 	//YD added
 	pSC->pTransformedImage = pSC0->pTransformedImage;
+/*
+int k,j,min=INF;
+int* diff=(int*)malloc(pSC->cmbWidth*pSC->cmbHeight*sizeof(int));
+for(k=pSC->cmbHeight-1;k>=0;k--){
+	for(j=pSC->cmbWidth-1;j>=0;j--){
+		int sum=0,i;
+		for (i=0;i<16*16;i++){
+			sum+=*(pSC->pTransformedImage+i+(k*pSC->cmbWidth+k+pSC->cmbWidth+j+2)*16*16);
+		}
+		sum=sum/16/16;
+		diff[k*pSC->cmbWidth+j]=0;
+		for (i=0;i<16*16;i++){
+			diff[k*pSC->cmbWidth+j]+=abs(*(pSC->pTransformedImage+i+(k*pSC->cmbWidth+k+pSC->cmbWidth+j+2)*16*16)-sum);
+		}
+		if(diff[k*pSC->cmbWidth+j]<min)min=diff[k*pSC->cmbWidth+j];
+		if(k*pSC->cmbWidth+j<pSC->cmbWidth*pSC->cmbHeight-1)
+			diff[k*pSC->cmbWidth+j]+=diff[k*pSC->cmbWidth+j+1];
+	}
+}
+for(k=0;k<pSC->cmbHeight;k++){
+	for(j=0;j<pSC->cmbWidth;j++){
+		diff[k*pSC->cmbWidth+j]=diff[k*pSC->cmbWidth+j]/min;
+		printf("%d\n",diff[k*pSC->cmbWidth+j]);
+	}
+}
+*/
 	pSC->qpMatrix = pSC0->qpMatrix;
 	//clean pSC0
 	if (sizeof(*pSC0) != pSC->cbStruct)

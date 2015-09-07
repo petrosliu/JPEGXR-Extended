@@ -209,8 +209,6 @@ QPMatrix* createQPMatrix(CWMImageStrCodec * pSC){
 void adpativeMBQP(CWMImageStrCodec * pSC){
 	QPMatrix* qpMatrix = (QPMatrix*)pSC->qpMatrix;
 	const int MBindex = (pSC->cRow-1)*pSC->cmbWidth+pSC->cColumn-1;
-	const int isMBLeft = (MBindex % pSC->cmbWidth == 0);
-	const int isMBRight = ((MBindex + 1) % pSC->cmbWidth == 0);
 	int* pLPQP = qpMatrix->pLPQPMatrix+MBindex;
 	int* pHPQP = qpMatrix->pHPQPMatrix+MBindex;
 	int* pLPQPs = qpMatrix->iLPQP;
