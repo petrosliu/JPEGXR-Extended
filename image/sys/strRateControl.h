@@ -25,7 +25,7 @@
 //#define RATECONTROL_TEST_YD
 
 #ifdef RATECONTROL_TEST_YD 
-#define RATECONTROL_TEST_VERBOSE 1
+#define RATECONTROL_TEST_VERBOSE 0
 #endif
 
 #define BINSEARCH 0
@@ -55,6 +55,10 @@ typedef struct tagQPCRList {
 	int* pNumOfBits;
 	int* range;
 } QPCRList;
+
+int lookupSF(int qp);
+
+int lookupQP(int sf);
 
 QPCRList* createQPCRList(int fitMode);
 

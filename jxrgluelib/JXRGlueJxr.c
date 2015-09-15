@@ -976,7 +976,8 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 	const CWMImageStrCodec* pSCrc = (CWMImageStrCodec*) pIE->WMP.ctxSCrc;
 	CWMImageStrCodec* pSC = (CWMImageStrCodec*) pIE->WMP.ctxSC;
 
-	QPCRList* list = createQPCRList(FITLINEAR);
+	//QPCRList* list = createQPCRList(FITLINEAR);
+	QPCRList* list = createQPCRList(BINSEARCH);
 	
 	list->crt = pIE->WMP.wmiSCP.fltCRatio;
 	list->imageSize = pIE->WMP.wmiI.cWidth * pIE->WMP.wmiI.cHeight;
@@ -1001,7 +1002,7 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 #ifdef RATECONTROL_TEST_YD 
 	printQPCRList(list);
 #endif
-	printf("%d",*pQP);
+	printf("%d\n",*pQP);
 	freeQPCRList(&list);
 	free(pSCrc);
 Cleanup: return err;

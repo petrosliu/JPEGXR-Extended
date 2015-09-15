@@ -12,6 +12,7 @@
 #include "strcodec.h"
 #include "strTransform.h"
 #include "strRateControl.h"
+#include "snr.h"
 #include <math.h>
 #include "perfTimer.h"
 #include <stdio.h>
@@ -38,6 +39,7 @@ typedef struct tagQPMatrix{
 	int tempQP;
 	float fltRestCRatio;
 	int bExtendedJXR;
+	double* psnr;
 } QPMatrix;
 
 

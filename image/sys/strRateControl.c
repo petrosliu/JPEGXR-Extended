@@ -7,38 +7,79 @@
 
 #include "strRateControl.h"
 
+const int LOOKUP[255] = {
+	0x2, 0x4, 0x6, 0x8, 0xA, 0xC, 0xE, 0x10, 0x12, 0x14, 0x16, 0x18, 0x1A, 0x1C, 0x1E, 0x20,
+	0x22, 0x24, 0x26, 0x28, 0x2A, 0x2C, 0x2E, 0x30, 0x32, 0x34, 0x36, 0x38, 0x3A, 0x3C, 0x3E, 0x40,
+    0x44, 0x48, 0x4C, 0x50, 0x54, 0x58, 0x5C, 0x60, 0x64, 0x68, 0x6C, 0x70, 0x74, 0x78, 0x7C, 0x80,
+	0x88, 0x90, 0x98, 0xA0, 0xA8, 0xB0, 0xB8, 0xC0, 0xC8, 0xD0, 0xD8, 0xE0, 0xE8, 0xF0, 0xF8, 0x100,
+	0x110, 0x120, 0x130, 0x140, 0x150, 0x160, 0x170, 0x180, 0x190, 0x1A0, 0x1B0, 0x1C0, 0x1D0, 0x1E0, 0x1F0, 0x200,
+	0x220, 0x240, 0x260, 0x280, 0x2A0, 0x2C0, 0x2E0, 0x300, 0x320, 0x340, 0x360, 0x380, 0x3A0, 0x3C0, 0x3E0, 0x400,
+	0x440, 0x480, 0x4C0, 0x500, 0x540, 0x580, 0x5C0, 0x600, 0x640, 0x680, 0x6C0, 0x700, 0x740, 0x780, 0x7C0, 0x800,
+	0x880, 0x900, 0x980, 0xA00, 0xA80, 0xB00, 0xB80, 0xC00, 0xC80, 0xD00, 0xD80, 0xE00, 0xE80, 0xF00, 0xF80, 0x1000,
+	0x1100, 0x1200, 0x1300, 0x1400, 0x1500, 0x1600, 0x1700, 0x1800, 0x1900, 0x1A00, 0x1B00, 0x1C00, 0x1D00, 0x1E00, 0x1F00, 0x2000,
+	0x2200, 0x2400, 0x2600, 0x2800, 0x2A00, 0x2C00, 0x2E00, 0x3000, 0x3200, 0x3400, 0x3600, 0x3800, 0x3A00, 0x3C00, 0x3E00, 0x4000,
+	0x4400, 0x4800, 0x4C00, 0x5000, 0x5400, 0x5800, 0x5C00, 0x6000, 0x6400, 0x6800, 0x6C00, 0x7000, 0x7400, 0x7800, 0x7C00, 0x8000,
+	0x8800, 0x9000, 0x9800, 0xA000, 0xA800, 0xB000, 0xB800, 0xC000, 0xC800, 0xD000, 0xD800, 0xE000, 0xE800, 0xF000, 0xF800, 0x10000,
+	0x11000, 0x12000, 0x13000, 0x14000, 0x15000, 0x16000, 0x17000, 0x18000, 0x19000, 0x1A000, 0x1B000, 0x1C000, 0x1D000, 0x1E000, 0x1F000, 0x20000,
+	0x22000, 0x24000, 0x26000, 0x28000, 0x2A000, 0x2C000, 0x2E000, 0x30000, 0x32000, 0x34000, 0x36000, 0x38000, 0x3A000, 0x3C000, 0x3E000, 0x40000,
+	0x44000, 0x48000, 0x4C000, 0x50000, 0x54000, 0x58000, 0x5C000, 0x60000, 0x64000, 0x68000, 0x6C000, 0x70000, 0x74000, 0x78000, 0x7C000, 0x80000,
+	0x88000, 0x90000, 0x98000, 0xA0000, 0xA8000, 0xB0000, 0xB8000, 0xC0000, 0xC8000, 0xD0000, 0xD8000, 0xE0000, 0xE8000, 0xF0000, 0xF8000
+};
+
 //*******************************************************************
 // Private Functions
 //*******************************************************************
 float fitLinearModel(int bits, float crt, int index){
 	crt=(crt>0)?crt:1;
 	float a,b,c;
-		switch(bits){
-			case 8:
-				if(crt>24.7301) crt=24.7301;
-				a=-4.4413;
-				b=44.1726;
-				c=-84.4936;
-				break;
-			case 16:
-				if(crt>16.1765) crt=16.1765;
-				a=-15.8981;
-				b=127.8816;
-				c=-132.9908;
-				break;
-			case 32:
-				if(crt>13.5083) crt=13.5083;
-				a=-34.9914;
-				b=257.2141;
-				c=-275.7579;
-				break;
-			default:
-				if(crt>15.0475) crt=15.0475;
-				a=-18.4436;
-				b=143.0894;
-				c=-262.4141;
-				break;
-		}
+	switch(bits){
+		case 8:
+			a=2.6401;
+			b=0;
+			c=-2.7445;
+			break;
+		case 16:
+			a=330.9;
+			b=0;
+			c=-1088.5;
+			break;
+		case 32:
+			a=8516;
+			b=0;
+			c=-42382;
+			break;
+		default:
+			a=2950;
+			b=0;
+			c=-14491;
+			break;
+	}
+	// switch(bits){
+	// 	case 8:
+	// 		if(crt>24.7301) crt=24.7301;
+	// 		a=-4.4413;
+	// 		b=44.1726;
+	// 		c=-84.4936;
+	// 		break;
+	// 	case 16:
+	// 		if(crt>16.1765) crt=16.1765;
+	// 		a=-15.8981;
+	// 		b=127.8816;
+	// 		c=-132.9908;
+	// 		break;
+	// 	case 32:
+	// 		if(crt>13.5083) crt=13.5083;
+	// 		a=-34.9914;
+	// 		b=257.2141;
+	// 		c=-275.7579;
+	// 		break;
+	// 	default:
+	// 		if(crt>15.0475) crt=15.0475;
+	// 		a=-18.4436;
+	// 		b=143.0894;
+	// 		c=-262.4141;
+	// 		break;
+	// }
 	if(index=='a') return a;
 	if(index=='b') return b;
 	if(index=='c') return c;
@@ -91,8 +132,10 @@ float fitLinear(QPCRList* list){
 			QPCRNode* head=list->head;
 			qp = a*crt + b*sqrt(crt) + (float)(head->qp)
 			    -(a*(float)(head->cr) + b*sqrt((float)(head->cr)));
+			qp=lookupQP(qp);
 		}else{
 			qp = a*crt + b*sqrt(crt) + c;
+			qp=lookupQP(qp);
 		}
 	}
 	return qp;
@@ -292,6 +335,26 @@ void updateRange(QPCRList* list){
 //*******************************************************************
 // Public Functions
 //*******************************************************************
+int lookupSF(int qp){
+	qp=(qp>255)?255:(qp<1)?1:qp;
+	return LOOKUP[qp-1];
+}
+
+int lookupQP(int sf){
+	int qp;
+	if(sf<=LOOKUP[0]) return 1;
+	else if(sf>=LOOKUP[254]) return 255;
+	else{
+		int a=0,b=254;
+		while(b-a>1){
+			if(sf==LOOKUP[(a+b)/2]) return (a+b)/2+1;
+			if(sf<LOOKUP[(a+b)/2]) b=(a+b)/2;
+			else a=(a+b)/2;
+		}
+		if(abs(sf-LOOKUP[a])<=abs(sf-LOOKUP[b])) return a+1;
+		else return b+1;
+	}
+}
 
 int isTargetReached(QPCRList* list){
 	if(list->numOfNodes==0) return 0;
@@ -435,6 +498,15 @@ void freeQPCRList(QPCRList** plist){
 	free(list);
 }
 
+int getBitCounter(CWMImageStrCodec * pSC){
+	int cCurrBits = 0;
+	int k;
+	for (k = 0; k < pSC->cNumBitIO; k++) {
+		cCurrBits += pSC->m_ppBitIO[k]->cBitsCounter;
+	}
+	return cCurrBits;
+}
+
 //*******************************************************************
 // Test functions
 //*******************************************************************
@@ -499,7 +571,7 @@ void printQPCRList(QPCRList* list){
 				(float) list->imageSize * (float) list->bits / 8);
 		printf("================================================================\n");
 	}else{		
-		printf("%.2f\t%d\t%d\t%d\t%d\t%.0f\t%.0f",list->crt,list->finalQP,list->imageSize,list->bits,list->numOfNodes,
+		printf("%.2f\t%d\t%d\t%d\t%d\t%d\t%.0f\t%.0f",list->crt,list->finalQP,lookupSF(list->finalQP),list->imageSize,list->bits,list->numOfNodes,
 			(float) list->imageSize * (float) list->bits / list->crt / 8,
 			(float) (*(list->pNumOfBits)) / 8);
 		if(!evaluateQPCRList(list)) printf("\tINEFF");

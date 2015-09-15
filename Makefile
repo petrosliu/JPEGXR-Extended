@@ -140,11 +140,10 @@ $(DECAPP): $(LIBRARIES)
 ## SNR app files
 ##
 
-OBJ_SNR = snr.o
-SNRAPP = snr
+SNRAPP = PSNR
 
-$(SNRAPP):$(OBJ_SNR)
-	$(CC) $(DIR_SYS)/$(SNRAPP).c -o $(SNRAPP) $(CFLAGS) -I $(LIBS)
+$(SNRAPP):$(LIBRARIES)
+	$(CC) $(DIR_EXEC)/$(SNRAPP).c -o $(SNRAPP) $(CFLAGS) -I $(LIBS)
 ##--------------------------------
 ##
 ## JPEG XR library

@@ -446,13 +446,8 @@ Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 	}
 	
 	#if 0 //YD added
-	int k;
-	for (k = 0; k < pSC->cNumBitIO; k++) {
-		printf("%d ",pSC->m_ppBitIO[k]->cBitsCounter);
-	}
-	printf("\n");
+	printf("%d\n",getBitCounter(pSC));
 	#endif
-	
 	
 	return ICERR_OK;
 }
@@ -1890,7 +1885,8 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 		b = fitLinearModel(pSC->WMII.cBitsPerUnit, crt, 'b');
 		c = fitLinearModel(pSC->WMII.cBitsPerUnit, crt, 'c');
 		crt = fitLinearModel(pSC->WMII.cBitsPerUnit, crt, 0);
-		qp = a*crt + b*sqrt(crt) + c - 20 + 0.5;
+		qp = a*crt + b*sqrt(crt) + c;
+		qp=lookupQP(qp)-20;
 		qp=(qp<1)?1:(qp>255)?255:qp;
 		pSC->WMISCP.uiDefaultQPIndex = (int) qp;
 	}
@@ -1908,7 +1904,7 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 			pSCP->qpMatrix = (void*) createQPMatrix(pSC);
 			pSC->qpMatrix= pSCP->qpMatrix;
 			QPMatrix* qpMatrix = pSC->qpMatrix;
-			qpMatrix->fltCRatio = pSCP->fltCRatio / (1 + RATETOL/4*3);
+			qpMatrix->fltCRatio = pSCP->fltCRatio;// / (1 + RATETOL/4*3);
 			//defaultQPMatrix(qpMatrix);
 		}
 		updateQPs(pSC->qpMatrix, pSC->WMISCP.uiDefaultQPIndex);
@@ -2298,14 +2294,8 @@ Int ImageStrEncCtrlTerm(CTXSTRCODEC ctxSC) {
     //================================
 
 	pSC->ProcessBottomRight(pSC);
-		
-		
 	
-	pSC->cNumOfBits=0;
-	int k;
-	for (k = 0; k < pSC->cNumBitIO; k++) {
-		pSC->cNumOfBits += pSC->m_ppBitIO[k]->cBitsCounter;
-	}
+	pSC->cNumOfBits = getBitCounter(pSC);
 	
     //================================
     //StrEncTerm(pSC);
@@ -2626,11 +2616,7 @@ Int ImageStrEncTerm(CTXSTRCODEC ctxSC) {
 	if(pSC->WMISCP.bAdaptiveQP) {
 		QPMatrix* qpMatrix = pSC->qpMatrix;
 		int imageSize = pSC->WMII.cWidth * pSC->WMII.cHeight;
-		int cCurrBits = 0;
-		int k;
-		for (k = 0; k < pSC->cNumBitIO; k++) {
-			cCurrBits += pSC->m_ppBitIO[k]->cBitsCounter;
-		}
+		int cCurrBits = getBitCounter(pSC);
 		printf("%.2f\t%d\t%d\t%d\t%.0f\t%.0f\n",qpMatrix->fltCRatio,qpMatrix->iDCQP,imageSize,pSC->WMII.cBitsPerUnit,
 				(float) imageSize * (float) pSC->WMII.cBitsPerUnit / qpMatrix->fltCRatio / 8,
 				(float) cCurrBits / 8);
