@@ -29,113 +29,84 @@ const int LOOKUP[255] = {
 //*******************************************************************
 // Private Functions
 //*******************************************************************
-float fitLinearModel(int bits, float crt, int index){
-	crt=(crt>0)?crt:1;
-	float a,b,c;
-	switch(bits){
-		case 8:
-			a=2.6401;
-			b=0;
-			c=-2.7445;
-			break;
-		case 16:
-			a=330.9;
-			b=0;
-			c=-1088.5;
-			break;
-		case 32:
-			a=8516;
-			b=0;
-			c=-42382;
-			break;
-		default:
-			a=2950;
-			b=0;
-			c=-14491;
-			break;
-	}
+float fitLinearModel(int bits, int index){
+	float a,b;
 	// switch(bits){
 	// 	case 8:
-	// 		if(crt>24.7301) crt=24.7301;
-	// 		a=-4.4413;
-	// 		b=44.1726;
-	// 		c=-84.4936;
+	// 		a=2.6401;
+	// 		b=0;
+	// 		c=-2.7445;
 	// 		break;
 	// 	case 16:
-	// 		if(crt>16.1765) crt=16.1765;
-	// 		a=-15.8981;
-	// 		b=127.8816;
-	// 		c=-132.9908;
+	// 		a=330.9;
+	// 		b=0;
+	// 		c=-1088.5;
 	// 		break;
 	// 	case 32:
-	// 		if(crt>13.5083) crt=13.5083;
-	// 		a=-34.9914;
-	// 		b=257.2141;
-	// 		c=-275.7579;
+	// 		a=8516;
+	// 		b=0;
+	// 		c=-42382;
 	// 		break;
 	// 	default:
-	// 		if(crt>15.0475) crt=15.0475;
-	// 		a=-18.4436;
-	// 		b=143.0894;
-	// 		c=-262.4141;
+	// 		a=2950;
+	// 		b=0;
+	// 		c=-14491;
 	// 		break;
 	// }
+	switch(bits){
+		case 8:
+			a=2.8978;
+			b=-3.0286;
+			break;
+		case 16:
+			a=364.8;
+			b=-1182.4;
+			break;
+		case 32:
+			a=9542;
+			b=-47647;
+			break;
+		default:
+			a=3303;
+			b=-1627.7;
+			break;
+	}
 	if(index=='a') return a;
-	if(index=='b') return b;
-	if(index=='c') return c;
-	return crt;
+	return b;
 }
 
 float fitLinear(QPCRList* list){
 	float qp;
-	const int thsh=30;
-	const float weight=0.2;
-	
+
 	if(list->numOfNodes>=2){
-		qp=list->fit[0]*(float)list->crt+list->fit[1];
+		qp=lookupQP(list->fit[0]*(float)list->crt+list->fit[1]);
 		qp=(qp>255)?255:((qp<1)?1:qp);
 		if(qp>list->range[1]||qp<list->range[0]){
-			qp=((float)list->range[1]-(float)list->range[0])*weight+(float)list->range[0];
+			qp=((float)list->range[1]-(float)list->range[0])*0.5+(float)list->range[0];
 		}
-		else if(qp-list->curr->qp>thsh&&qp-list->last->qp>thsh){
-			if(list->range[1]-list->range[0]>thsh){
-				float max=((float)list->range[1]-(float)list->range[0])*weight+(float)list->range[0];
-				float pct=(qp-(float)list->range[0])/(max-(float)list->range[0]);
-				pct=((2-4*weight)*pct*pct+(4*weight-1)*pct);
-				pct=(pct>1)?1:((pct<0)?0:pct);
-				qp=pct*(max-(float)list->range[0])+(float)list->range[0];
-			}
-			else{
-				float pct=(qp-(float)list->range[0])/((float)list->range[1]-(float)list->range[0]);
-				pct=((2-4*weight)*pct*pct+(4*weight-1)*pct);
-				pct=(pct>1)?1:((pct<0)?0:pct);
-				qp=pct*((float)list->range[1]-(float)list->range[0])+(float)list->range[0];
-			}
-		}
-		else if(qp<list->curr->qp&&qp>list->last->qp||qp<list->last->qp&&qp>list->curr->qp){
-			if(list->range[1]-list->range[0]>thsh /*&& list->crt>=8.375*/){
-				float pct=(qp-(float)list->range[0])/((float)list->range[1]-(float)list->range[0]);
-				pct=(2*pct-(2-4*weight)*pct*pct-(4*weight-1)*pct);
-				pct=(pct>1)?1:((pct<0)?0:pct);
-				qp=pct*((float)list->range[1]-(float)list->range[0])+(float)list->range[0];	
-			}
+		if(list->curr->cr==list->last->cr && list->curr->cr>list->crt){
+			qp=1;
 		}
 	}else{	
-		float a,b,c;
+		float a,b;
 		float crt=list->crt;
-		a = fitLinearModel(list->bits, crt, 'a');
-		b = fitLinearModel(list->bits, crt, 'b');
-		c = fitLinearModel(list->bits, crt, 'c');
-		crt = fitLinearModel(list->bits, crt, 0);
+		a = fitLinearModel(list->bits,'a');
+		b = fitLinearModel(list->bits,'b');
 		
 		if(list->numOfNodes){
 			QPCRNode* head=list->head;
-			qp = a*crt + b*sqrt(crt) + (float)(head->qp)
-			    -(a*(float)(head->cr) + b*sqrt((float)(head->cr)));
-			qp=lookupQP(qp);
+			if(head->cr>crt){
+			qp=lookupQP(
+				(float)lookupSF(head->qp)/(head->cr+ b / a)*crt + (float)lookupSF(head->qp)/(head->cr+b / a) * b / a
+				);
+			}
+			else{
+			qp=lookupQP(
+				a*(crt-head->cr)+(float)lookupSF(head->qp)
+				);
+			}
 		}else{
-			qp = a*crt + b*sqrt(crt) + c;
-			qp=lookupQP(qp);
+			qp = lookupQP(a*crt + b);
 		}
 	}
 	return qp;
@@ -292,8 +263,8 @@ void updateFit(QPCRList* list){
 	float* fit=list->fit;
 	switch(list->fitMode){
 		case FITLINEAR:
-			fit[0]=((float)curr->qp-(float)last->qp)/(curr->cr-last->cr);
-			fit[1]=(float)last->qp-last->cr*fit[0];
+			fit[0]=((float)lookupSF(curr->qp)-(float)lookupSF(last->qp))/(curr->cr-last->cr);
+			fit[1]=(float)lookupSF(last->qp)-last->cr*fit[0];
 			break;
 		case BINSEARCH:
 		default:
@@ -473,7 +444,8 @@ QPCRList* createQPCRList(int fitMode){
 	switch(fitMode){
 		case FITLINEAR:
 			list->fit=(float*)malloc(2*sizeof(float));
-			memset(list->fit,0,2);
+			list->fit[0] = fitLinearModel(list->bits,'a');
+			list->fit[1] = fitLinearModel(list->bits,'b');
 			break;
 		case BINSEARCH:
 		default:
@@ -496,6 +468,13 @@ void freeQPCRList(QPCRList** plist){
 	if(list->fit!=NULL) free(list->fit);
 	free(list->range);
 	free(list);
+}
+
+void resetBitCounter(CWMImageStrCodec * pSC){
+	int k;
+	for (k = 0; k < pSC->cNumBitIO; k++) {
+		pSC->m_ppBitIO[k]->cBitsCounter=0;
+	}
 }
 
 int getBitCounter(CWMImageStrCodec * pSC){
@@ -532,22 +511,19 @@ void printQPCRList(QPCRList* list){
 		QPCRNode* p = list->head;
 		QPCRNode* q;
 		if(list->numOfNodes!=0){
-			printf("================================================================\n");
-			printf("index\tqp\tcr\tsize\t|index\tqp\tcr\tsize\n");
+			printf("============================================================================\n");
+			printf("index\tqp\tsf\tcr\tsize\tindex\tqp\tsf\tcr\tsize\n");
 			int i=1;
 			while(p != NULL){
 				q=getQPCRNodeByIndex(list,i);
 				i++;
-				printf("%d\t%d\t%.2f\t%.0f\t", q->index, q->qp, q->cr, (float) list->imageSize * (float) list->bits / q->cr / 8 + 0.5);
-			
-				printf("|%d\t%d\t%.2f\t%.0f", p->index, p->qp, p->cr, (float) list->imageSize * (float) list->bits / p->cr / 8 + 0.5);
-				if(p == curr && curr != NULL) printf("<-\n");
-				else printf("\n");
+				printf("%d\t%d\t%d\t%.2f\t%.0f\t", q->index, q->qp,lookupSF(q->qp), q->cr, (float) list->imageSize * (float) list->bits / q->cr / 8 + 0.5);
+				printf("%d\t%d\t%d\t%.2f\t%.0f\n", p->index, p->qp, lookupSF(p->qp), p->cr, (float) list->imageSize * (float) list->bits / p->cr / 8 + 0.5);
 				p = p->next;
 			}
 			if(!evaluateQPCRList(list)) printf("ALERT: APPROACH IS INEFFICIENT!\n");
 		}
-		printf("================================================================\n");
+		printf("============================================================================\n");
 		printf("mode\t");
 		switch(list->fitMode){
 			case FITLINEAR:

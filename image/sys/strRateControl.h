@@ -22,10 +22,10 @@
 #ifndef RATECONTOL_YD
 #define RATECONTOL_YD
 
-//#define RATECONTROL_TEST_YD
+#define RATECONTROL_TEST_YD
 
 #ifdef RATECONTROL_TEST_YD 
-#define RATECONTROL_TEST_VERBOSE 0
+#define RATECONTROL_TEST_VERBOSE 1
 #endif
 
 #define BINSEARCH 0
@@ -70,7 +70,7 @@ void updateList(QPCRList* list, int qptmp, float crtmp);
 
 void freeQPCRList(QPCRList** plist);
 
-float fitLinearModel(int bits, float crt, int index);
+float fitLinearModel(int bits, int index);
 
 #ifdef RATECONTROL_TEST_YD
 void printQPCRList(QPCRList* list);

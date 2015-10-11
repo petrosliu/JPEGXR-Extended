@@ -298,6 +298,7 @@ Int ctrlMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 					putBit16(pContext->m_pIOFL, pContext->m_iTrimFlexBits, 4);
 			}
 		}
+		resetBitCounter(pSC);
 	}
 
     if (EncodeMacroblockDC(pSC, pContext, iMBX, iMBY) != ICERR_OK){
@@ -445,7 +446,7 @@ Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 		}
 	}
 	
-	#if 0 //YD added
+	#if 1 //YD added
 	printf("%d\n",getBitCounter(pSC));
 	#endif
 	
@@ -486,26 +487,6 @@ Int transformMB(CWMImageStrCodec *pSC) {
 			}
 		#endif
 		}
-        /*
-        if (!topORleft) {
-            getTilePos(pSC, (Int) pSC->cColumn - 1, (Int) pSC->cRow - 1);
-            if (jend) {
-                pSC->m_pNextSC->cTileRow = pSC->cTileRow;
-                pSC->m_pNextSC->cTileColumn = pSC->cTileColumn;
-            }
-            if ((result = encodeMB(pSC, (Int) pSC->cColumn - 1,
-                                   (Int) pSC->cRow - 1)) != ICERR_OK)
-                return result;
-        }
-        
-        if (jend) {
-            pSC->m_pNextSC->cRow = pSC->cRow;
-            pSC->m_pNextSC->cColumn = pSC->cColumn;
-            pSC = pSC->m_pNextSC;
-        }
-         */
-
-    
     return ICERR_OK;
 }
 // end of zx addition
@@ -524,9 +505,9 @@ Int controlMacroblock(CWMImageStrCodec *pSC) {
     
     for (j = 0; j <= jend; j++) {
 		
-        //transformMacroblock(pSC);
-        if (!topORleft) {
-			
+        //if (!topORleft) {
+		if((pSC->cColumn > pSC->patch[0] && pSC->cColumn <= pSC->patch[1]
+		   && pSC->cRow > pSC->patch[2] && pSC->cRow <= pSC->patch[3])){	
 			int const stride=16*16;
 			PixelI* const p = pSC->pPlane[0];
 			int32_t* const transMB = pSC->pTransformedImage+(pSC->cRow * (pSC->cmbWidth+1) + pSC->cColumn)*stride;
@@ -573,24 +554,12 @@ Int processMacroblock(CWMImageStrCodec *pSC) {
     size_t j, jend = (pSC->m_pNextSC != NULL);
     
     for (j = 0; j <= jend; j++) {
-		
-        //transformMacroblock(pSC);
         if (!topORleft) {
 			
 			int const stride=16*16;
 			PixelI* const p = pSC->pPlane[0];
 			int32_t* const transMB = pSC->pTransformedImage+(pSC->cRow * (pSC->cmbWidth+1) + pSC->cColumn)*stride;
 			memcpy(p,transMB,stride*sizeof(PixelI));//YD added
-			
-			#if 0
-				int i,k;
-				for (i=0;i<16;i++){
-					for (k=0;k<16;k++){
-					printf("%d ",*(pSC->pPlane[0]+k+i*16));
-					}
-					printf("\n");
-				}
-			#endif
 		
             getTilePos(pSC, (Int) pSC->cColumn - 1, (Int) pSC->cRow - 1);
             if (jend) {
@@ -1879,14 +1848,12 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
     
     //================================================
     if(pSC->WMISCP.bAdaptiveQP && pSC->WMISCP.uiDefaultQPIndex == 255) {
-		float a,b,c,qp;
+		float a,b,qp;
 		float crt=pSCP->fltCRatio;
-		a = fitLinearModel(pSC->WMII.cBitsPerUnit, crt, 'a');
-		b = fitLinearModel(pSC->WMII.cBitsPerUnit, crt, 'b');
-		c = fitLinearModel(pSC->WMII.cBitsPerUnit, crt, 'c');
-		crt = fitLinearModel(pSC->WMII.cBitsPerUnit, crt, 0);
-		qp = a*crt + b*sqrt(crt) + c;
-		qp=lookupQP(qp)-20;
+		a = fitLinearModel(pSC->WMII.cBitsPerUnit,'a');
+		b = fitLinearModel(pSC->WMII.cBitsPerUnit,'b');
+		qp =lookupQP(a*crt + b);
+		qp=qp-20;
 		qp=(qp<1)?1:(qp>255)?255:qp;
 		pSC->WMISCP.uiDefaultQPIndex = (int) qp;
 	}
@@ -2183,6 +2150,10 @@ Int ImageStrEncCtrlInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	//YD added
 	pSC->pTransformedImage = pSC0->pTransformedImage;
 	pSC->qpMatrix = pSC0->qpMatrix;
+	pSC->patch[0] = pSC0->patch[0];
+	pSC->patch[1] = pSC0->patch[1];
+	pSC->patch[2] = pSC0->patch[2];
+	pSC->patch[3] = pSC0->patch[3];
 	//================================================
     *pctxSCrc = (CTXSTRCODEC) pSC;
     
@@ -2460,32 +2431,24 @@ Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	
 	//YD added
 	pSC->pTransformedImage = pSC0->pTransformedImage;
-/*
-int k,j,min=INF;
-int* diff=(int*)malloc(pSC->cmbWidth*pSC->cmbHeight*sizeof(int));
-for(k=pSC->cmbHeight-1;k>=0;k--){
-	for(j=pSC->cmbWidth-1;j>=0;j--){
-		int sum=0,i;
-		for (i=0;i<16*16;i++){
-			sum+=*(pSC->pTransformedImage+i+(k*pSC->cmbWidth+k+pSC->cmbWidth+j+2)*16*16);
-		}
-		sum=sum/16/16;
-		diff[k*pSC->cmbWidth+j]=0;
-		for (i=0;i<16*16;i++){
-			diff[k*pSC->cmbWidth+j]+=abs(*(pSC->pTransformedImage+i+(k*pSC->cmbWidth+k+pSC->cmbWidth+j+2)*16*16)-sum);
-		}
-		if(diff[k*pSC->cmbWidth+j]<min)min=diff[k*pSC->cmbWidth+j];
-		if(k*pSC->cmbWidth+j<pSC->cmbWidth*pSC->cmbHeight-1)
-			diff[k*pSC->cmbWidth+j]+=diff[k*pSC->cmbWidth+j+1];
-	}
-}
-for(k=0;k<pSC->cmbHeight;k++){
-	for(j=0;j<pSC->cmbWidth;j++){
-		diff[k*pSC->cmbWidth+j]=diff[k*pSC->cmbWidth+j]/min;
-		printf("%d\n",diff[k*pSC->cmbWidth+j]);
-	}
-}
-*/
+	// int ii;
+	// for(ii=70;ii<100;ii+=5){
+	// 	double qnz,qz;
+	// 	double rho=ii/100.0;
+	// 	int q = RHO2QP(rho,32);
+	// 	double k=getQnz(pSC->pTransformedImage,(pSC->cmbWidth+1)*(pSC->cmbHeight+1),1,RHO2QP(0.6,32),RHO2QP(0.6,32))
+	// 	/(1-0.6);
+	// 	qnz=getQnz(pSC->pTransformedImage,(pSC->cmbWidth+1)*(pSC->cmbHeight+1),1,q,q);
+	// 	qz=getQz(pSC->pTransformedImage,(pSC->cmbWidth+1)*(pSC->cmbHeight+1),1,q,q);
+	// 	printf("%d\t%f\t%f\t%f\t%f\n",q,k,rho,qnz,qz);
+	// }
+	// int ii;
+	// for(ii=1;ii<=255;ii++){
+	// 	double rho;
+	// 	rho=getRho(pSC->pTransformedImage,(pSC->cmbWidth+1)*(pSC->cmbHeight+1),1,ii,ii);
+	// 	printf("%d\t%f\n",ii,rho);
+	// }
+	
 	pSC->qpMatrix = pSC0->qpMatrix;
 	//clean pSC0
 	if (sizeof(*pSC0) != pSC->cbStruct)

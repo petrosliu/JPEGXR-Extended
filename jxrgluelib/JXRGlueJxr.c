@@ -979,10 +979,10 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 	//QPCRList* list = createQPCRList(FITLINEAR);
 	QPCRList* list = createQPCRList(BINSEARCH);
 	
-	list->crt = pIE->WMP.wmiSCP.fltCRatio;
-	list->imageSize = pIE->WMP.wmiI.cWidth * pIE->WMP.wmiI.cHeight;
+	list->crt = evaluatePatch(pSC, 'm', INF, 2, pIE->WMP.wmiSCP.fltCRatio);
+	list->imageSize = 16*16*(pSC->patch[1]-pSC->patch[0])*(pSC->patch[3]-pSC->patch[2]);//pIE->WMP.wmiI.cWidth * pIE->WMP.wmiI.cHeight;
 	list->bits = pIE->WMP.wmiI.cBitsPerUnit;
-	list->tol = (1 / (1 - RATETOL) - 1) * list->crt;
+	list->tol = (1 / (1 - /*RATETOL*/0) - 1) * list->crt;
 	list->pNumOfBits = &(pIE->WMP.wmiSCP.cNumOfBits);
 	
 	int qptmp;
@@ -1002,7 +1002,7 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 #ifdef RATECONTROL_TEST_YD 
 	printQPCRList(list);
 #endif
-	printf("%d\n",*pQP);
+	//printf("%d\n",*pQP);
 	freeQPCRList(&list);
 	free(pSCrc);
 Cleanup: return err;

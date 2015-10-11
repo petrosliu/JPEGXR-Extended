@@ -76,25 +76,12 @@ int fitLinearWithTempCRT(CWMImageStrCodec * pSC, float crt){
 	float cCurrRatio = 16.0*16.0*(float)bits/(float)(getBitCounter(pSC)-138);
 	float sf;
 	int qp;
-	float a,b,c,crttmp;
-	a = fitLinearModel(bits, crt, 'a');
-	b = fitLinearModel(bits, crt, 'b');
-	c = fitLinearModel(bits, crt, 'c');
+	float a,b,crttmp;
+	a = fitLinearModel(bits, 'a');
+	b = fitLinearModel(bits, 'b');
 	
-	sf=lookupSF(qpMatrix->tempQP)/(cCurrRatio+c/a)*(crt+c/a);
+	sf=lookupSF(qpMatrix->tempQP)/(cCurrRatio+b/a)*(crt+b/a);
 	qp=lookupQP((int)sf);
-	// crttmp = fitLinearModel(bits, crt, 0);
-	// qp1 = a*crttmp + b*sqrt(crttmp)+c;
-	// if(crt!=crttmp){
-	// 	qp1=(255-qp1)/(50-crttmp)*(crt-crttmp)+qp1;
-	// }
-	// crttmp = fitLinearModel(bits, cCurrRatio, 0);
-	// qp2 = a*crttmp + b*sqrt(crttmp)+c;
-	// if(cCurrRatio!=crttmp){
-	// 	qp2=(255-qp2)/(50-crttmp)*(cCurrRatio-crttmp)+qp2;
-	// }
-	
-	// qp=qpMatrix->tempQP+qp1-qp2;
 	qp=(qp>255)?255:(qp<1)?1:qp;
 	return qp;
 }
@@ -289,7 +276,7 @@ void adpativeMBQP(CWMImageStrCodec * pSC){
 		//printf("%d %d %d %d %d\n",MBindex,*pLPQP,*pHPQP,pLPQPs[*pLPQP],pHPQPs[*pHPQP]);
 	}
 	qpMatrix->psnr[MBindex]=quickPSNR(qpMatrix->tempQP,pSC->WMII.cBitsPerUnit);
-	printf("%d\n",qpMatrix->tempQP);
+	//printf("%d\n",qpMatrix->tempQP);
 }
 
 void updateQPs(QPMatrix * qpMatrix, int qp){

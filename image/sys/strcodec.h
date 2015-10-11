@@ -328,6 +328,7 @@ typedef struct CWMImageStrCodec {
 	int32_t * pTransformedImage;
 	U32 cNumOfBits;
 	void * qpMatrix;
+	int patch[4];
 	
 	struct CWMDecoderParameters *m_Dparam; // this is specified thru pointer because the same set of parameters may be used by multiple image planes
 

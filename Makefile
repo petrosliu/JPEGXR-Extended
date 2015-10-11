@@ -49,7 +49,7 @@ CFLAGS=-I. -Icommon/include -I$(DIR_SYS) -D__ANSI__ -w -O
 ## Common files
 ##
 
-OBJ_SYS=adapthuff.o image.o strcodec.o strPredQuant.o strTransform.o perfTimerANSI.o strRateControl.o strAdaptiveQP.o snr.o
+OBJ_SYS=adapthuff.o image.o strcodec.o strPredQuant.o strTransform.o perfTimerANSI.o strRateControl.o strAdaptiveQP.o snr.o rho.o
 
 $(OBJ_SYS):
 	$(CC) $(CFLAGS) -c $(DIR_SYS)/$*.c

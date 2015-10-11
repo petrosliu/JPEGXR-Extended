@@ -1,11 +1,12 @@
 #!/bin/bash
 
-list=`ls /home/petros/Desktop/database/Snapshots`
+list=`ls /home/petros/Desktop/database/Snapshots/*0_589_236.raw`
 
 for fname in $list
 do
 
 tmp=${fname%%.*}
+tmp=${tmp##*/}
 bit=${tmp%%_*}
 tmp=${tmp#*_}
 index=${tmp%%_*}

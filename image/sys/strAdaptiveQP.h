@@ -13,6 +13,7 @@
 #include "strTransform.h"
 #include "strRateControl.h"
 #include "snr.h"
+#include "rho.h"
 #include <math.h>
 #include "perfTimer.h"
 #include <stdio.h>
