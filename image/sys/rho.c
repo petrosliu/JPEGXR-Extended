@@ -129,11 +129,6 @@ double getRho(int* image, int mb, int dcqp, int lpqp, int hpqp){
 	return rho;
 }
 
-
-
-
-
-
 int** cutByFraction(CWMImageStrCodec * pSC, int widFrac, int heiFrac){
 	int wid=pSC->cmbWidth;
 	int hei=pSC->cmbHeight;
@@ -157,6 +152,8 @@ int** cutByFraction(CWMImageStrCodec * pSC, int widFrac, int heiFrac){
 }
 
 double evaluatePatch(CWMImageStrCodec * pSC, int c, int w, int h, double crt){
+	QPMatrix* qpMatrix=(QPMatrix*)pSC->qpMatrix;
+		
 	w=(w<=0)?1:w;
 	h=(h<=0)?1:h;
 	
@@ -175,6 +172,15 @@ double evaluatePatch(CWMImageStrCodec * pSC, int c, int w, int h, double crt){
 			heiFrac=(hei/h>hei)?hei:(hei/h<1)?1:hei/h;
 	}
 	
+	if(widFrac==1&&heiFrac==1){
+		pSC->patch[0]=0;
+		pSC->patch[1]=wid;
+		pSC->patch[2]=0;
+		pSC->patch[3]=hei;
+		return crt;
+	}
+	
+	
 	int i,j,k,l,m;
 	const int stride = 16*16;
 	int **patchMark=cutByFraction(pSC, widFrac, heiFrac);
@@ -191,51 +197,46 @@ double evaluatePatch(CWMImageStrCodec * pSC, int c, int w, int h, double crt){
 	printf("\n");
 	
 	double *sigma2=malloc(widFrac*heiFrac*sizeof(double));
-	double *simean=malloc(widFrac*heiFrac*sizeof(double));
 	for(i=0;i<heiFrac;i++){
 		for(j=0;j<widFrac;j++){
 			int addr=i*widFrac+j;
 			sigma2[addr]=0.0;
-			simean[addr]=0.0;
 			for(k=heiMark[i];k<heiMark[i+1];k++){
 				for(l=widMark[j];l<widMark[j+1];l++){
 					int* pMB = pSC->pTransformedImage+((k+1) * (pSC->cmbWidth+1) + l+1)*stride;
 					for (m=1;m<stride;m++)
 						sigma2[addr]+=pow((double)(*(pMB+m)-*(pMB)),2)/16.0/16.0/(heiMark[i+1]-heiMark[i])/(widMark[j+1]-widMark[j]);
-						if(m!=stride-1)
-							simean[addr]+=abs(*(pMB+m+1)-*(pMB+m-1))/(16.0*16.0-2)/(heiMark[i+1]-heiMark[i])/(widMark[j+1]-widMark[j]);
 				}
 			}
-			printf("%d %d %f %f\n",j,i,sigma2[addr],simean[addr]);
 		}
 	}
 	double gm=1.0;
-	double sim=0.0;
 	for(i=0;i<widFrac*heiFrac;i++){
 		gm*=pow(sigma2[i],1.0/widFrac/heiFrac);
-		sim+=simean[i]/widFrac/heiFrac;
 	}
 
-	printf("%f %f\n",gm,sim);
+	printf("%f\n",gm);
 	
 	double *cri=malloc(widFrac*heiFrac*sizeof(double));
-	double *cri2=malloc(widFrac*heiFrac*sizeof(double));
 	double closestCR=INF;
 	for(i=0;i<heiFrac;i++){
 		for(j=0;j<widFrac;j++){
 			int addr=i*widFrac+j;
 			cri[addr]=0.5*log(sigma2[addr]/gm)/log(2.0);
-			cri2[addr]=0.5*log(simean[addr]/sim)/log(2.0);
+			printf("%d %d %f\n",j,i,cri[addr]);
+			for(k=heiMark[i];k<heiMark[i+1];k++){
+				for(l=widMark[j];l<widMark[j+1];l++){
+					qpMatrix->rn[k * pSC->cmbWidth + l]=cri[addr];
+				}
+			}
 			if(fabs(cri[addr])<fabs(closestCR)){
-			//if(fabs(cri2[addr])<fabs(closestCR)){
 				closestCR=cri[addr];
-				//closestCR=cri2[addr];
 				pSC->patch[0]=widMark[j];
 				pSC->patch[1]=widMark[j+1];
 				pSC->patch[2]=heiMark[i];
 				pSC->patch[3]=heiMark[i+1];
 			}
-			printf("%d\t%d\t%f\t%f\n",widMark[j],heiMark[i],cri[addr],cri2[addr]);
+			printf("%d\t%d\t%f\n",widMark[j],heiMark[i],cri[addr]);
 		}
 	}
 	            // i=2;j=0;
@@ -247,4 +248,39 @@ double evaluatePatch(CWMImageStrCodec * pSC, int c, int w, int h, double crt){
 	printf("%d %d %d %d\n",pSC->patch[0],pSC->patch[1],pSC->patch[2],pSC->patch[3]);
 	
 	return closestCR+crt;
+}
+
+double calculate_SIGMA2(CWMImageStrCodec * pSC){
+	
+	const int* image=pSC->pTransformedImage;
+	const int width=pSC->cmbWidth;
+	const int height=pSC->cmbHeight;
+	const int stride=16*16;
+	double sigma2=0;
+	int i,j,k;
+	for(i=0;i<height*16+16;i++){
+		for(j=0;j<width*16+16;j++){
+			sigma2+=pow((double)*(image+i*(width+1)+j),2);
+		}
+	}
+	sigma2/=(double)(width*height);
+	return sigma2;
+}
+
+int calculate_QPfromSNR(CWMImageStrCodec * pSC, double snr){
+	double sigma=pow(pSC->WMISCP.sigma2,0.5);
+	double sf=sigma*pow(10,-snr/20.0)*3.464101615;
+	//sf=sf*pow(2,4);
+	sf/=1322.880115;
+	return lookupQP((int)(sf+0.5));
+}
+
+int calculate_QPfromPSNR(CWMImageStrCodec * pSC, double psnr){
+	double bits=pSC->WMII.cBitsPerUnit;
+	double peak=pow(2.0,bits-1.0)-1.0;
+	double sf=peak*pow(10,-psnr/20.0)*3.464101615;
+	//double sf=pow((pow(2.0,bits-1.0)-1.0)/pow(10.0,psnr/10.0)*12,0.5);
+	sf/=(1322.880115/2);
+	//double sf=pow(10.0,(135.0-psnr)/20.0)*pow(2,11);
+	return lookupQP((int)(sf+0.5));
 }

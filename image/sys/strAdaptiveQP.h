@@ -41,6 +41,7 @@ typedef struct tagQPMatrix{
 	float fltRestCRatio;
 	int bExtendedJXR;
 	double* psnr;
+	double* rn;
 } QPMatrix;
 
 

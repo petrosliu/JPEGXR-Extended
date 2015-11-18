@@ -143,6 +143,7 @@ void WmpEncAppInitDefaultArgs(WMPENCAPPARGS* args) {
 	args->wmiSCP.bAdaptiveQP = FALSE;
 	args->wmiSCP.bExtendedJXR = FALSE;
 	args->wmiSCP.fltCRatio = 1.0;
+	args->wmiSCP.isFloat = 0;
 	args->fltImageCRatio = 1.0;
 	
 	args->bOverlapSet = 0;
@@ -377,6 +378,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				{
 					pMyArgs->bpi = 32;
 					pMyArgs->isFloat = 1;//default
+					args->wmiSCP.isFloat = 1;
 				}
 				else
 					pMyArgs->bpi = atoi(argv[i]);
@@ -439,6 +441,52 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 			}
 			break;
 		}
+	}
+
+	{
+		int size=pMyArgs->hei*pMyArgs->wid;
+		FILE *rawfile=fopen(args->szInputFile,"r");
+		
+		double sigma2=0.0;
+		if(pMyArgs->isFloat){
+			float* image=(float*)calloc(size, sizeof(float));
+			fread(image,sizeof(float),size,rawfile);
+			for(i = 0; i < size; i++){
+				sigma2+=pow((double)image[i],2);
+			}
+		}
+		else{
+			switch(pMyArgs->bpi){
+				case 8:{
+					unsigned char* image=(unsigned char *)calloc(size, sizeof(unsigned char));
+					fread(image,sizeof(unsigned char),size,rawfile);
+					for(i = 0; i < size; i++){
+						sigma2+=pow((double)image[i],2);
+					}
+				}
+				break;
+				case 16:{
+					unsigned short* image=(unsigned short *)calloc(size, sizeof(unsigned short));
+					fread(image,sizeof(unsigned short),size,rawfile);
+					for(i = 0; i < size; i++){
+						sigma2+=pow((double)image[i],2);
+					}
+				}
+				break;
+				case 32:{
+					int32_t* image=(int32_t*)calloc(size, sizeof(int32_t));
+					fread(image,sizeof(int32_t),size,rawfile);
+					for(i = 0; i < size; i++){
+						sigma2+=pow((double)image[i],2);
+					}
+				}
+				break;
+			}
+		}
+		sigma2/=(double)(size);
+		args->wmiSCP.sigma2=sigma2;
+		pMyArgs->sigma2=sigma2;
+		fclose(rawfile);
 	}
 
 	//================================
@@ -727,13 +775,13 @@ main(int argc, char* argv[]) {
 		pEncoder->WriteSource = PKImageEncode_WriteSource;
 		Call(pEncoder->WriteSource(pEncoder, pConverter, &rect));
 		//I could seek set to the end and then write it in...
-		if(pMyArgs->isFloat)
-		{
+		//if(pMyArgs->isFloat)
+		//{
 			FILE *fps;
 			fps = fopen(args.szOutputFile,"ab");//append the quantStep
 			fwrite(&(pMyArgs->stepSize),sizeof(double),1,fps);//write at the end
 			fclose(fps);
-		}
+		//}
 
 		pConverter->Release(&pConverter);
 		pDecoder->Release(&pDecoder);

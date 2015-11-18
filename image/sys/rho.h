@@ -24,4 +24,6 @@ double QP2RHO(int qp, int bits);
 int RHO2QP(double rho, int bits);
 double getRho(int* image, int mb, int dcqp, int lpqp, int hpqp);
 double evaluatePatch(CWMImageStrCodec * pSC, int c, int w, int h, double crt);
+int calculate_QPfromSNR(CWMImageStrCodec * pSC, double snr);
+int calculate_QPfromPSNR(CWMImageStrCodec * pSC, double psnr);
 #endif

@@ -109,7 +109,7 @@ Int quantizeMacroblock(CWMImageStrCodec* pSC) {
 			}
 		}
 	}
-	
+			
 	for (iChannel = 0; iChannel < (int) pSC->m_param.cNumChannels; iChannel++) {
 		I32 * pDC = pSC->MBInfo.iBlockDC[iChannel];
 		PixelI * pData = pSC->pPlane[iChannel];

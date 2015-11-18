@@ -22,15 +22,31 @@ double quickPSNR(int qp, int bits){
     return PSNR;
 }
 
-double calculate_PSNR(int* source_data, int* comparison_data, int count, int bits) {
+double calculate_PSNR(double* source_data, double* comparison_data, int count, int bits) {
     int i;
     double MSE = 0.0, PSNR = 0.0;
     double peak = pow(2.0,(double)bits) - 1.0;
     for(i = 0; i < count; i++) {
-        MSE += pow((double)(source_data[i] - comparison_data[i]), 2.0);
+        MSE += pow((source_data[i] - comparison_data[i]), 2.0);
     }
     MSE /= (double)(count);
     
     PSNR = 20.0 * log10( peak / sqrt(MSE));
     return PSNR;
+}
+
+double calculate_SNR(double* source_data, double* comparison_data, int count, int bits){
+    int i;
+    double mean=0.0, sigma2=0.0, MSE = 0.0, SNR = 0.0;
+    for(i = 0; i < count; i++){
+		sigma2+=pow(source_data[i],2);
+	}
+	sigma2/=(double)(count);
+    for(i = 0; i < count; i++) {
+        MSE += pow((source_data[i] - comparison_data[i]), 2.0);
+    }
+    MSE /= (double)(count);
+    
+    SNR = 10.0 * log10( sigma2 / MSE);
+    return SNR;
 }

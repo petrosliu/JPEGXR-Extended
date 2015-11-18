@@ -29,6 +29,7 @@
 #include "encode.h"
 #include "strTransform.h"
 #include "strAdaptiveQP.h"
+#include "strRateControl.h"
 #include <math.h>
 #include "perfTimer.h"
 
@@ -186,7 +187,7 @@ Int writeTileHeaderLP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 					formatQuantizer(pTile->pQuantizerLP, pTile->cChModeLP[i],
 						pSC->m_param.cNumChannels, i, TRUE,
 						pSC->m_param.bScaledArith);
-					if(!qpMatrix->bExtendedJXR){
+					if(!pSC->WMISCP.bExtendedJXR){
 						writeQuantizer(pTile->pQuantizerLP, pIO,
 							pTile->cChModeLP[i], pSC->m_param.cNumChannels, i);
 					}
@@ -247,7 +248,7 @@ Int writeTileHeaderHP(CWMImageStrCodec * pSC, BitIOInfo * pIO) {
 					formatQuantizer(pTile->pQuantizerHP, pTile->cChModeHP[i],
 						pSC->m_param.cNumChannels, i, FALSE,
 						pSC->m_param.bScaledArith);
-					if(!qpMatrix->bExtendedJXR){
+					if(!pSC->WMISCP.bExtendedJXR){
 						writeQuantizer(pTile->pQuantizerHP, pIO,
 							pTile->cChModeHP[i], pSC->m_param.cNumChannels, i);
 					}
@@ -446,7 +447,7 @@ Int encodeMB(CWMImageStrCodec * pSC, Int iMBX, Int iMBY) {
 		}
 	}
 	
-	#if 1 //YD added
+	#if 0 //YD added
 	printf("%d\n",getBitCounter(pSC));
 	#endif
 	
@@ -543,6 +544,27 @@ Int controlMacroblock(CWMImageStrCodec *pSC) {
     return ICERR_OK;
 }
 
+void quandequan(int* p, int qp){
+	double sf=lookupSF(qp);
+	int i;
+	const double lmt=pow(2,31)-1;
+	for(i=0;i<16*16;i++){
+		double ans=(double)((int)((double)p[i]/sf+0.5))*sf;
+		p[i]=(int)((ans>lmt)?lmt:(ans<-lmt)?-lmt:ans);
+	}
+}
+
+void maskmb(int* p,int keep){
+	keep=(keep>16)?16:(keep<0)?0:keep;
+	int i,j;
+	for(i=0;i<16;i++){
+		for(j=keep;j<16;j++){
+			p[j]=0;
+		}
+		
+	}
+}
+
 Int processMacroblock(CWMImageStrCodec *pSC) {
 	#if 0
     	if(pSC->cColumn<3||pSC->cColumn>33) 
@@ -560,6 +582,8 @@ Int processMacroblock(CWMImageStrCodec *pSC) {
 			PixelI* const p = pSC->pPlane[0];
 			int32_t* const transMB = pSC->pTransformedImage+(pSC->cRow * (pSC->cmbWidth+1) + pSC->cColumn)*stride;
 			memcpy(p,transMB,stride*sizeof(PixelI));//YD added
+			//quandequan(p,125);
+			//maskmb(p,7);
 		
             getTilePos(pSC, (Int) pSC->cColumn - 1, (Int) pSC->cRow - 1);
             if (jend) {
@@ -1847,7 +1871,7 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
     pSC->pIOHeader = (BitIOInfo*) pb;
     
     //================================================
-    if(pSC->WMISCP.bAdaptiveQP && pSC->WMISCP.uiDefaultQPIndex == 255) {
+    if(pSC->WMISCP.bAdaptiveQP && !pSC->WMISCP.bExtendedJXR && pSC->WMISCP.uiDefaultQPIndex == 255) {
 		float a,b,qp;
 		float crt=pSCP->fltCRatio;
 		a = fitLinearModel(pSC->WMII.cBitsPerUnit,'a');
@@ -1857,7 +1881,7 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 		qp=(qp<1)?1:(qp>255)?255:qp;
 		pSC->WMISCP.uiDefaultQPIndex = (int) qp;
 	}
-	
+		
 	err = StrEncInit(pSC);
     if (ICERR_OK != err)
         goto ErrorExit;
@@ -1874,7 +1898,6 @@ Int ImageStrEncTransInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 			qpMatrix->fltCRatio = pSCP->fltCRatio;// / (1 + RATETOL/4*3);
 			//defaultQPMatrix(qpMatrix);
 		}
-		updateQPs(pSC->qpMatrix, pSC->WMISCP.uiDefaultQPIndex);
 	}
     //================================================
     *pctxSC = (CTXSTRCODEC) pSC;
@@ -2141,6 +2164,9 @@ Int ImageStrEncCtrlInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
     
     //================================================
 
+	pSC->WMISCP.bAdaptiveQP = FALSE;
+	pSC->WMISCP.bExtendedJXR = FALSE;
+	
     err = StrEncInit(pSC);
     if (ICERR_OK != err)
         goto ErrorExit;
@@ -2422,7 +2448,7 @@ Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
     pSC->pIOHeader = (BitIOInfo*) pb;
     
     //================================================
-
+	
     err = StrEncInit(pSC);
     if (ICERR_OK != err)
         goto ErrorExit;
@@ -2431,25 +2457,8 @@ Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 	
 	//YD added
 	pSC->pTransformedImage = pSC0->pTransformedImage;
-	// int ii;
-	// for(ii=70;ii<100;ii+=5){
-	// 	double qnz,qz;
-	// 	double rho=ii/100.0;
-	// 	int q = RHO2QP(rho,32);
-	// 	double k=getQnz(pSC->pTransformedImage,(pSC->cmbWidth+1)*(pSC->cmbHeight+1),1,RHO2QP(0.6,32),RHO2QP(0.6,32))
-	// 	/(1-0.6);
-	// 	qnz=getQnz(pSC->pTransformedImage,(pSC->cmbWidth+1)*(pSC->cmbHeight+1),1,q,q);
-	// 	qz=getQz(pSC->pTransformedImage,(pSC->cmbWidth+1)*(pSC->cmbHeight+1),1,q,q);
-	// 	printf("%d\t%f\t%f\t%f\t%f\n",q,k,rho,qnz,qz);
-	// }
-	// int ii;
-	// for(ii=1;ii<=255;ii++){
-	// 	double rho;
-	// 	rho=getRho(pSC->pTransformedImage,(pSC->cmbWidth+1)*(pSC->cmbHeight+1),1,ii,ii);
-	// 	printf("%d\t%f\n",ii,rho);
-	// }
-	
 	pSC->qpMatrix = pSC0->qpMatrix;
+	if(pSC->WMISCP.bAdaptiveQP) updateQPs(pSC->qpMatrix, pSC->WMISCP.uiDefaultQPIndex);
 	//clean pSC0
 	if (sizeof(*pSC0) != pSC->cbStruct)
 		return ICERR_ERROR;
@@ -2459,6 +2468,7 @@ Int ImageStrEncInit(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 		if (pSC0->pResV != NULL)
 			free(pSC0->pResV);
 	}
+	
 	freePredInfo(pSC0);
 	FreeCodingContextEnc(pSC0);
 	freeTileInfo(pSC0);
@@ -2575,7 +2585,7 @@ Int ImageStrEncTerm(CTXSTRCODEC ctxSC) {
     //================================
 
 	pSC->ProcessBottomRight(pSC);
-#if 0
+#if 1
 	if(pSC->WMISCP.bAdaptiveQP) {
 		QPMatrix* qpMatrix = pSC->qpMatrix;
 		int imageSize = pSC->WMII.cWidth * pSC->WMII.cHeight;

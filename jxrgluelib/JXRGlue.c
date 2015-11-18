@@ -651,7 +651,7 @@ ERR PKImageEncode_WriteSource(PKImageEncode* pIE, PKFormatConverter* pFC,
     //YD added
     Call(pIE->Transform(pIE, pRect->Height, pb, cbStride));
 	
-	if (pIE->WMP.wmiSCP.fltCRatio != 1.0 && !pIE->WMP.wmiSCP.bAdaptiveQP){
+	if (pIE->WMP.wmiSCP.fltCRatio != 1.0 /*&& !pIE->WMP.wmiSCP.bAdaptiveQP*/){
 		Call(pIE->Ratecontrol(pIE, pRect->Height, pb, cbStride));
 	}
 	

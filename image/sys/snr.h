@@ -6,8 +6,8 @@
 //*******************************************************************
 
 
-#ifndef PSNR_YD
-#define PSNR_YD
+#ifndef SNR_YD
+#define SNR_YD
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +18,6 @@
 
 int quickQP(double PSNR, int bits);
 double quickPSNR(int qp, int bits);
-double calculate_PSNR(int* source_data, int* comparison_data, int count, int bits);
-
+double calculate_PSNR(double* source_data, double* comparison_data, int count, int bits);
+double calculate_SNR(double* source_data, double* comparison_data, int count, int bits);
 #endif

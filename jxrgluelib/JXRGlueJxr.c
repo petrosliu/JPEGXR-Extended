@@ -972,17 +972,29 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
     ERR err = WMP_errSuccess;
 
 	U8 *pQP = &(pIE->WMP.wmiSCP.uiDefaultQPIndex);
-
+	
 	const CWMImageStrCodec* pSCrc = (CWMImageStrCodec*) pIE->WMP.ctxSCrc;
 	CWMImageStrCodec* pSC = (CWMImageStrCodec*) pIE->WMP.ctxSC;
 
 	//QPCRList* list = createQPCRList(FITLINEAR);
 	QPCRList* list = createQPCRList(BINSEARCH);
 	
-	list->crt = evaluatePatch(pSC, 'm', INF, 2, pIE->WMP.wmiSCP.fltCRatio);
+	//if(pSC->WMISCP.bAdaptiveQP) list->crt = evaluatePatch(pSC, 'm', INF, 2, pIE->WMP.wmiSCP.fltCRatio);
+	//else list->crt = evaluatePatch(pSC, 'm', INF, INF, pIE->WMP.wmiSCP.fltCRatio);
+	
+	int snrqp;
+	int snr=80;
+	if(pIE->WMP.wmiSCP.isFloat){
+		snrqp=calculate_QPfromSNR(pSC, snr);
+	}
+	else{
+		snrqp=calculate_QPfromPSNR(pSC, snr);
+	}
+	snrqp=1;
+	/*
 	list->imageSize = 16*16*(pSC->patch[1]-pSC->patch[0])*(pSC->patch[3]-pSC->patch[2]);//pIE->WMP.wmiI.cWidth * pIE->WMP.wmiI.cHeight;
 	list->bits = pIE->WMP.wmiI.cBitsPerUnit;
-	list->tol = (1 / (1 - /*RATETOL*/0) - 1) * list->crt;
+	list->tol = (1 / (1 - RATETOL) - 1) * list->crt;
 	list->pNumOfBits = &(pIE->WMP.wmiSCP.cNumOfBits);
 	
 	int qptmp;
@@ -999,10 +1011,12 @@ ERR PKImageEncode_ControlContent(PKImageEncode* pIE, PKPixelInfo PI, U32 cLine,
 	// if(pSC->WMISCP.bAdaptiveQP) finalizeQPMatrix(qpMatrix);
 	
 	*pQP = list->finalQP;
+	*/
+	*pQP = snrqp;
 #ifdef RATECONTROL_TEST_YD 
 	printQPCRList(list);
 #endif
-	//printf("%d\n",*pQP);
+	printf("%d\n",*pQP);
 	freeQPCRList(&list);
 	free(pSCrc);
 Cleanup: return err;

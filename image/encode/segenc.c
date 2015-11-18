@@ -133,6 +133,7 @@ Int EncodeMacroblockDC(CWMImageStrCodec *pSC, CCodingContext *pContext,
 	writeIS_L1(pSC, pIO);
 //YD mark
 	if (pSC->m_param.bTranscode == FALSE) {
+		
 		// pMBInfo->iQIndexLP = (U8) (
 		// 		pTile->cNumQPLP > 1 ? (rand() % pTile->cNumQPLP) : 0);
 		// pMBInfo->iQIndexHP = (U8) (
@@ -166,7 +167,6 @@ Int EncodeMacroblockDC(CWMImageStrCodec *pSC, CCodingContext *pContext,
 		pSC->Quantize(pSC);
 	}
 	predMacroblockEnc(pSC);
-
 	/** code path for Y_ONLY, CMYK and N_CHANNEL DC **/
 	if (cf == Y_ONLY || cf == CMYK || cf == NCOMPONENT) {
 		Int iQDC, iDC, iSign;
@@ -251,7 +251,7 @@ Int EncodeMacroblockDC(CWMImageStrCodec *pSC, CCodingContext *pContext,
 			putBit16z(pIO, (iDCV < 0), 1);
 		}
 	}
-
+			
 	UpdateModelMB(cf, iChannels, aLaplacianMean, &(pContext->m_aModelDC));
 
 	if (pSC->m_bResetContext && pSC->WMISCP.sbSubband == SB_DC_ONLY) {

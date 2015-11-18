@@ -140,7 +140,7 @@ $(DECAPP): $(LIBRARIES)
 ## SNR app files
 ##
 
-SNRAPP = PSNR
+SNRAPP = SNR
 
 $(SNRAPP):$(LIBRARIES)
 	$(CC) $(DIR_EXEC)/$(SNRAPP).c -o $(SNRAPP) $(CFLAGS) -I $(LIBS)

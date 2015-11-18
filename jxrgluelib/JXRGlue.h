@@ -72,6 +72,7 @@ extern "C" {
 		int quant;
 		double stepSize;
 		float rate;
+		double sigma2;
 	} ARGInputs;
 
 	//================================================================

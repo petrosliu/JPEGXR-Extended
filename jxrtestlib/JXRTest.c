@@ -35,41 +35,75 @@ FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream)
 	FILE * fp;
 	double temp;
 	int32_t *imageOut;
-	float *image;
 	double ma;
 	double mi;
 	double max;
 	double quantStep;
+	double snr=100;
+	double sigma=pow(pMyArgs->sigma2,0.5);
 	int i;
 	int width,height;
 	int t;
 	width = pMyArgs->wid;
 	height = pMyArgs->hei;
 	fp = pStream->state.file.pFile;
-
+	
 	t = width*height;
-	ma = 0;
-	mi = 0;
-	image = (float *)calloc(t, sizeof(float));
-	fread(image,sizeof(float),t,fp);
-	for(i=0;i<t;i++)
-	{
-		ma = (((float)image[i])>ma)?((float)image[i]):ma; //max
-		mi = (((float)image[i])<mi)?((float)image[i]):mi; //min
-	}
-	//fclose(fp);
-	max = (fabs(ma)>fabs(mi))?fabs(ma):fabs(mi);
-	quantStep = max/(pow(2,31)-1);
-		
 	imageOut = (int32_t *)malloc(t*sizeof(int32_t));
-	
-	for(i = 0; i<t; i++)
-	{
-		imageOut[i]	= (int32_t)(((float)image[i])/quantStep);
+	if(pMyArgs->isFloat){
+		float *image;
+		ma = 0;
+		mi = 0;
+		image = (float *)calloc(t, sizeof(float));
+		fread(image,sizeof(float),t,fp);
+		for(i=0;i<t;i++)
+		{
+			ma = (((float)image[i])>ma)?((float)image[i]):ma; //max
+			mi = (((float)image[i])<mi)?((float)image[i]):mi; //min
+		}
+		
+		max = (fabs(ma)>fabs(mi))?fabs(ma):fabs(mi);
+		quantStep = max/(pow(2,31)-1);
+		double qp=sigma*pow(10,-snr/20)*3.464101615*pow(2,-11);
+		//printf("%f %f",quantStep,qp);
+		quantStep = (quantStep>qp)?quantStep:qp;//qp;
+		
+		printf("%f",10*log(pMyArgs->sigma2*12*pow(quantStep*pow(2,11),-2))/log(10));
+		
+		for(i = 0; i<t; i++)
+		{
+			imageOut[i]	= (int32_t)(((float)image[i])/quantStep);
+		}
+		// for(i = 0; i<5; i++){
+		// 	printf("%f\t",image[i]);
+		// }		
+		// printf("\n");
+		// for(i = 0; i<5; i++){
+		// 	printf("%d\t",imageOut[i]);
+		// }		
+		// printf("\n");
+		pMyArgs->stepSize = quantStep;
+	}else{
+		int *image;
+		image = (int *)calloc(t, sizeof(int));
+		fread(image,sizeof(int),t,fp);
+		quantStep = 1;
+		
+		for(i = 0; i<t; i++)
+		{
+			imageOut[i]	= (int)(((float)image[i])/quantStep);
+		}
+		// for(i = 0; i<5; i++){
+		// 	printf("%d\t",image[i]);
+		// }		
+		// printf("\n");
+		// for(i = 0; i<5; i++){
+		// 	printf("%d\t",imageOut[i]);
+		// }
+		// printf("\n");
+		pMyArgs->isFloat = 1;
+		pMyArgs->stepSize = quantStep;
 	}
-	
-	pMyArgs->stepSize = quantStep;
-	
 	return fmemopen(imageOut, t*sizeof(int32_t), "rb");
 
 }
@@ -261,10 +295,7 @@ ERR PKTestFactory_CreateDecoderFromFileRaw(const char* szFilename,	PKImageDecode
 	//call the file memory open (fmemopen) and even can call convert2int here...
 	//
 	
-	if(pMyArgs->isFloat)
-	{
-		pStream->state.file.pFile = convert2int(pMyArgs, pStream);
-	}
+	pStream->state.file.pFile = convert2int(pMyArgs, pStream);
 	
 
 	// Create decoder
