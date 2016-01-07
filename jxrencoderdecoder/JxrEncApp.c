@@ -29,7 +29,9 @@
 #include <time.h>
 #include <unistd.h> /* for absolute directory for internal file to deal with float image */
 
-
+#ifndef INF
+#define INF 0x3fffffff
+#endif
 //================================================================
 // Command line argument support
 //================================================================
@@ -63,6 +65,7 @@ void ARGInputInit(ARGInputs* pMyArgs)
 	pMyArgs->quant		= 1;//lossless default
 	//YD added
 	pMyArgs->rate		= (float) pMyArgs->bpi;
+	pMyArgs->snr		= INF;
 	/* i\o */
 	pMyArgs->inputFile  = setNulls; 
 	pMyArgs->outputFile = NULL; 
@@ -279,7 +282,15 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				}else Call(WMP_errInvalidArgument);
 			}
 				break;
-
+				
+			case 'S': {
+				if(strcmp(argv[i],"inf")==0)
+					pMyArgs->snr=INF;
+				else
+					pMyArgs->snr = atoi(argv[i]);
+			}
+				break;
+				
 			case 'q': {
 					args->fltImageQuality = (float) atof(argv[i]);
 					pMyArgs->quant = (unsigned char) atoi(argv[i]);
@@ -443,52 +454,6 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 		}
 	}
 
-	{
-		int size=pMyArgs->hei*pMyArgs->wid;
-		FILE *rawfile=fopen(args->szInputFile,"r");
-		
-		double sigma2=0.0;
-		if(pMyArgs->isFloat){
-			float* image=(float*)calloc(size, sizeof(float));
-			fread(image,sizeof(float),size,rawfile);
-			for(i = 0; i < size; i++){
-				sigma2+=pow((double)image[i],2);
-			}
-		}
-		else{
-			switch(pMyArgs->bpi){
-				case 8:{
-					unsigned char* image=(unsigned char *)calloc(size, sizeof(unsigned char));
-					fread(image,sizeof(unsigned char),size,rawfile);
-					for(i = 0; i < size; i++){
-						sigma2+=pow((double)image[i],2);
-					}
-				}
-				break;
-				case 16:{
-					unsigned short* image=(unsigned short *)calloc(size, sizeof(unsigned short));
-					fread(image,sizeof(unsigned short),size,rawfile);
-					for(i = 0; i < size; i++){
-						sigma2+=pow((double)image[i],2);
-					}
-				}
-				break;
-				case 32:{
-					int32_t* image=(int32_t*)calloc(size, sizeof(int32_t));
-					fread(image,sizeof(int32_t),size,rawfile);
-					for(i = 0; i < size; i++){
-						sigma2+=pow((double)image[i],2);
-					}
-				}
-				break;
-			}
-		}
-		sigma2/=(double)(size);
-		args->wmiSCP.sigma2=sigma2;
-		pMyArgs->sigma2=sigma2;
-		fclose(rawfile);
-	}
-
 	//================================
 //	Call(WmpEncAppValidateArgs(args));
 
@@ -531,7 +496,7 @@ ERR connectWmpEncAppArgsAndARGInputs(WMPENCAPPARGS* args, ARGInputs* pMyArgs)
 		args->wmiSCP.uiDefaultQPIndex = 255;
 		args->fltImageQuality = 255;
 	}
-
+	
 	//printf("pMyArgs output file is %d\n",pMyArgs->outputFile);
 	if(pMyArgs->outputFile != NULL && pMyArgs->outputFile != '\0')
 	{
@@ -644,6 +609,9 @@ main(int argc, char* argv[]) {
 		PKRect rect = { 0, 0, 0, 0 };
 
 		Call(pTestFactory->CreateDecoderFromFileRaw(args.szInputFile, &pDecoder, pMyArgs)); 
+		//YD added
+		args.fltImageQuality = pMyArgs->quant;
+		
 		if (IsEqualGUID(&args.guidPixFormat, &GUID_PKPixelFormatDontCare))
 			Call(pDecoder->GetPixelFormat(pDecoder, &args.guidPixFormat));
 

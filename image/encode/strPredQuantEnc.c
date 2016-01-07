@@ -33,7 +33,7 @@ I32 QUANT_Mulless(PixelI v, PixelI o, I32 r) {
 	const I32 m = v >> 31;
 
 	assert(sizeof(PixelI) == sizeof(U32));
-	return ((((v ^ m) - m + o) >> r) ^ m) - m;
+	return ((((v ^ m) - m + o) >> r) ^ m) - m; //ydmark
 }
 
 I32 MUL32HR(U32 a, U32 b, U32 r) {
@@ -41,10 +41,11 @@ I32 MUL32HR(U32 a, U32 b, U32 r) {
 }
 
 I32 QUANT(PixelI v, PixelI o, I32 man, I32 exp) {
-	const I32 m = v >> 31;
+	const I32 m = v >> 31; 
 
 	assert(sizeof(PixelI) == sizeof(U32));
-	return (MUL32HR((v ^ m) - m + o, man, exp) ^ m) - m;
+	//printf("QUANT %d\n",(MUL32HR((v ^ m) - m + o, man, exp) ^ m) - m);
+	return (MUL32HR((v ^ m) - m + o, man, exp) ^ m) - m; 
 }
 
 Int quantizeMacroblock(CWMImageStrCodec* pSC) {
@@ -77,7 +78,7 @@ Int quantizeMacroblock(CWMImageStrCodec* pSC) {
 
 			for (j = 0; j < iNumBlock; j++) {
 				PixelI * pData = pSC->pPlane[iChannel] + pOffset[j];
-
+                //printf("%d\n",pData[0]);
 				if (j == 0){ // DC
 					pData[0] = (
 							pQPDC->iMan == 0 ?

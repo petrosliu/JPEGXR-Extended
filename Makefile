@@ -29,7 +29,8 @@
 ##
 build: all
 
-CC=cc -g
+CC=cc -pg -g
+#CC=cc -g
 
 DIR_SYS=image/sys
 DIR_DEC=image/decode

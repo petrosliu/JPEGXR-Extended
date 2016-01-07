@@ -60,22 +60,22 @@ static QPManExp gs_QPRecipTable[32] = {
 
 Void remapQP(CWMIQuantizer * pQP, I32 iShift, Bool bScaledArith) {
 	U8 uiQPIndex = pQP->iIndex;
-
-	if (uiQPIndex == 0) // Lossless mode!
+	if (uiQPIndex == 0){ // Lossless mode!
 		pQP->iQP = 1, pQP->iMan = pQP->iExp = pQP->iOffset = 0;
-	else if (!bScaledArith) {
+	} else if (!bScaledArith) {
 		I32 man = 0, exp = 0;
 		const I32 ciShift = SHIFTZERO - (SHIFTZERO + QPFRACBITS); // == -QPFRACBITS
 
-		if (pQP->iIndex < 32)
-			man = (pQP->iIndex + 3) >> 2, exp = ciShift + 2;
-		else if (pQP->iIndex < 48)
-			man = (16 + (pQP->iIndex & 0xf) + 1) >> 1, exp = ((pQP->iIndex >> 4)
-					- 1) + 1 + ciShift;
-		else
-			man = 16 + (pQP->iIndex & 0xf), exp = ((pQP->iIndex >> 4) - 1)
-					+ ciShift;
-
+		if (pQP->iIndex < 32){
+			man = (pQP->iIndex + 3) >> 2;
+            exp = ciShift + 2;
+        }else if (pQP->iIndex < 48){
+			man = (16 + (pQP->iIndex & 0xf) + 1) >> 1;
+            exp = ((pQP->iIndex >> 4) - 1) + 1 + ciShift;
+        }else{
+			man = 16 + (pQP->iIndex & 0xf);
+            exp = ((pQP->iIndex >> 4) - 1) + ciShift;
+        }
 		pQP->iQP = man << exp;
 		pQP->iMan = gs_QPRecipTable[man].iMan;
 		pQP->iExp = gs_QPRecipTable[man].iExp + exp;

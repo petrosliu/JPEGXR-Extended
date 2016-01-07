@@ -6,9 +6,6 @@
 //*******************************************************************
 
 #include "snr.h"
-#define PSNROUTPUT 0
-#define MBOUTPUT 1
-#define SIGMA2OUTPUT 2
 
 void InvalidArgument(char* argv){
     fprintf(stderr, "A program to calculate SNR and PSNR between raw images. Especially, the program\n");
@@ -16,10 +13,9 @@ void InvalidArgument(char* argv){
     fprintf(stderr, "%s -o [Original File] -c [Compressed File] -w [Width] -h [Height] -b [Bits] <Options>\n", argv);
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "\t-b:\t\t8|16|32|32f\n");
-    fprintf(stderr, "\t-p:\t\tPSNR\n");
-    fprintf(stderr, "\t-s:\t\tSNR\n");
-    fprintf(stderr, "\t-m:\t\tSNR for MBs\n");
-    fprintf(stderr, "\tdefault:\tint=PSNR float=SNR\n");
+    fprintf(stderr, "\t-C:\t\tPSNR|SNR|RHO|SIGMA\n");
+    fprintf(stderr, "\t-p:\t\tALL|MB\n");
+    fprintf(stderr, "\tdefault:\tALL int=PSNR float=SNR\n");
     exit(1);
 }
 
@@ -30,60 +26,64 @@ int main(int argc, char *argv[])
     int height=0;
     int bits=32;
     int isFloat=0;
-    int option=-1;
+    int piece=PALL;
+    int cout=-1;
     char* ofile=NULL;
     char* cfile=NULL;
     int i=1;
   	char c;
     while (i < argc && argv[i][0] == '-') {
 		switch ((c = argv[i][1])) {
-		case 'p':
-            if(option==-1)option=PSNROUTPUT;
-            else{
-                InvalidArgument(argv[0]);
-            }
-			break;
-		case 's':
-            if(option==-1)option=SIGMA2OUTPUT;
-            else{
-                InvalidArgument(argv[0]);
-            }
-			break;
-        case 'm':
-            if(option==-1)option=MBOUTPUT;
-            else{
-                InvalidArgument(argv[0]);
-            }
-			break;
 		default:
 			i++;
 			if (i == argc || argv[i][0] == '-'){
                 InvalidArgument(argv[0]);
             }
+            
 			switch (c) {
-			case 'o':
-				ofile = argv[i];
-				break;
-  			case 'c':
-				cfile = argv[i];
-				break;
-            case 'w':
-				width = (unsigned int)atoi(argv[i]);
-				break;
-            case 'h':
-				height = (unsigned int)atoi(argv[i]);
-				break;
-            case 'b':
-               if(strcmp(argv[i],"32f")==0){
-					bits = 32;
-					isFloat = 1;
-				}
-				else{
-					bits = atoi(argv[i]);
-                }
-				break;
-			default:
-				InvalidArgument(argv[0]);
+                case 'p':
+                    if(strcmp(argv[i],"ALL")==0) piece=PALL;
+                    else if(strcmp(argv[i],"MB")==0) piece=PMB;
+                    else{
+                        InvalidArgument(argv[0]);
+                    }
+                    break;
+                    
+                case 'C':
+                    if(strcmp(argv[i],"PSNR")==0) cout=CPSNR;
+                    else if(strcmp(argv[i],"SNR")==0) cout=CSNR;
+                    else if(strcmp(argv[i],"RHO")==0) cout=CRHO;
+                    else if(strcmp(argv[i],"SIGMA")==0) cout=CSIGMA;
+                    else{
+                        InvalidArgument(argv[0]);
+                    }
+                    break;    
+                
+                case 'o':
+                    ofile = argv[i];
+                    break;
+                case 'c':
+                    cfile = argv[i];
+                    break;
+                case 'w':
+                    width = (unsigned int)atoi(argv[i]);
+                    break;
+                case 'h':
+                    height = (unsigned int)atoi(argv[i]);
+                    break;
+                case 'b':
+                if(strcmp(argv[i],"32f")==0){
+                        bits = 32;
+                        isFloat = 1;
+                        if(cout==-1)cout=CSNR;
+                    }
+                    else{
+                        bits = atoi(argv[i]);
+                        if(cout==-1)cout=CPSNR;
+                    }
+                    break;
+                default:
+                    InvalidArgument(argv[0]);
 			}
 		}
 		i++;
@@ -145,50 +145,17 @@ int main(int argc, char *argv[])
         fclose(source_fp); fclose(comparison_fp);     
     }
     
-    switch(option){
-        case MBOUTPUT:{
-            int mbheight=(height-1)/16+1;
-            int mbwidth=(width-1)/16+1;
-            int i,j;
-            for(i=0;i<mbheight;i++){
-                for(j=0;j<mbwidth;j++){
-                    int hei=(i==mbheight-1)?height-i*16:16;
-                    int wid=(j==mbwidth-1)?width-j*16:16;
-                    double patch_o[16*16]={0.0};
-                    double patch_c[16*16]={0.0};
-                    int k,l,m=0;
-                    for(k=0;k<hei;k++){
-                        for(l=0;l<wid;l++){
-                            patch_o[m]=image_o[(i*16+k)*width+j*16+l];
-                            patch_c[m]=image_c[(i*16+k)*width+j*16+l];
-                            m++;
-                        }
-                    }
-                    if(isFloat){
-                        double PSNR=calculate_PSNR(patch_o,patch_c,wid*hei,bits);
-                        printf("%f\n",PSNR);
-                    }else{
-                        double SNR=calculate_SNR(patch_o,patch_c,wid*hei,bits);
-                        printf("%f\n",SNR);
-                    }
-                }
-            }
-            break;
+    switch(piece){
+        case PMB:{
+            double *mb_o=(double *)calloc(64, sizeof(double));
+            double *mb_c=(double *)calloc(64, sizeof(double));
         }
-        case SIGMA2OUTPUT:{
-            double SNR=calculate_SNR(image_o,image_c,width*height,bits);
-            printf("%f ",SNR);
-            break;
-        }
+        break;
+        case PALL:
         default:
         {
-            if(isFloat){
-                double SNR=calculate_SNR(image_o,image_c,width*height,bits);
-                printf("%f ",SNR);
-            }else{
-                double PSNR=calculate_PSNR(image_o,image_c,width*height,bits);
-                printf("%f ",PSNR);
-            }
+            double ans=calculate_suite(image_o, image_c, width, height, bits, isFloat, cout);
+            printf("%f ",ans);
         }
     }
     return 0;

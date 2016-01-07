@@ -69,7 +69,7 @@ static Void EncodeSignificantAbsLevel(UInt iAbsLevel,
 		iFixed = 4;
 		while (i) { /** caution - infinite loop if not careful **/
 			iFixed++;
-			assert(iFixed < 30);
+			assert(iFixed < 30); //ydmark
 			i >>= 1;
 		}
 

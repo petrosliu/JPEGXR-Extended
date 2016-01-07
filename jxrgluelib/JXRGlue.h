@@ -73,6 +73,7 @@ extern "C" {
 		double stepSize;
 		float rate;
 		double sigma2;
+		double snr;
 	} ARGInputs;
 
 	//================================================================

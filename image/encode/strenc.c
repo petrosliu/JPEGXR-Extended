@@ -1126,7 +1126,7 @@ Int WriteImagePlaneHeader(CWMImageStrCodec * pSC) {
 	case BD_32:
 	case BD_32S:
 		if (pSCP->nLenMantissaOrShift == 0)
-			pSCP->nLenMantissaOrShift = 10; //default
+			pSCP->nLenMantissaOrShift = 3;//10; //default //YDMARK
 		PUTBITS(pIO, pSCP->nLenMantissaOrShift, 8);
 		break;
 	case BD_32F:
