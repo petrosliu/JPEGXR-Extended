@@ -14,7 +14,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include "strRateControl.h"
 
 #define CPSNR 0
 #define CSNR 1

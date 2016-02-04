@@ -80,7 +80,6 @@ typedef struct /*rabih added*/
 	//char* outputFileSB;
 
 	Bool flag;
-    Bool isFloat;
 	double scale;
 } sbVar; //scaleback variable
 
@@ -90,8 +89,7 @@ void initSBVar (sbVar* pSBVar) /*rabih added*/
 	pSBVar->hei = 0;
 	pSBVar->wid = 0;
 	pSBVar->flag = FALSE;
-	pSBVar->isFloat = FALSE;
-	pSBVar->inputFileF = "out.raw"; //need to have this as the final output...
+	pSBVar->inputFileF = "out.tif"; //need to have this as the final output...
 	//pSBVar->outputFileSB = "out.float"; //this should be an intermediary
 }
 
@@ -101,45 +99,26 @@ void scaleback(sbVar * pSBVar)
 	double scale;
 	FILE    *in_file1, *in_file2;
 	int32_t *image1;
+	float *image2;
 	
 	in_file1=fopen(pSBVar->inputFileF,"r");
-    
+	//in_file2=fopen(pSBVar->outputFileSB,"w");
 	w=pSBVar->wid;
 	h=pSBVar->hei;
 	scale=pSBVar->scale;
 	t=w*h;
-    
+	
 	image1=(int32_t *)calloc(t, sizeof(int32_t));
-
+	image2=(float *)malloc(t*sizeof(float));
 	
 	fread(image1,sizeof(int32_t),w*h,in_file1);
 	fclose(in_file1);
-    
-    in_file2=fopen(pSBVar->inputFileF,"w+");
-    
-    if(pSBVar->isFloat){
-	   float *image2;
-        image2=(float *)malloc(t*sizeof(float));
-        for(i=0;i<t;i++)
-            image2[i]=scale*((float)image1[i]);
-        // for(i = 0; i<5; i++){
-        //     printf("%f\t",image2[i]);
-        // }
-        fwrite(image2,sizeof(float),w*h,in_file2);
-    }else{
-        int32_t *image2;
-        image2=(int32_t *)malloc(t*sizeof(int32_t));
-        for(i=0;i<t;i++)
-            image2[i]=(int32_t)(scale*((float)image1[i]));
-        
-        // for(i = 0; i<5; i++){
-        //     printf("%d\t",image2[i]);
-        // }
-        
-        fwrite(image2,sizeof(int32_t),w*h,in_file2);
-    }
-    
-    
+	
+	for(i=0;i<t;i++)
+		image2[i]=scale*((float)image1[i]);
+	
+	in_file2=fopen(pSBVar->inputFileF,"w+");
+	fwrite(image2,sizeof(float),w*h,in_file2);
 	fclose(in_file2);
 
 	/*
@@ -382,9 +361,6 @@ ERR WmpDecAppParseArgs(int argc, char* argv[], WMPDECAPPARGS* args, sbVar* pSBVa
                 // NOOP - now we always print timing info
                 break;
 			case 'F':
-				pSBVar->isFloat = TRUE;		
-				break;
-   			case 'S':
 				pSBVar->flag = TRUE;		
 				break;
             case 'v':
@@ -569,6 +545,7 @@ main(int argc, char* argv[])
 			exit(1);
 		}
 		fclose(fps);
+		//printf("this is what i pulled from file for scale: %e\n",pSBVar->scale);
 
 	}
     if (args.bVerbose)

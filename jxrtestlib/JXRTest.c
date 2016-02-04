@@ -27,10 +27,32 @@
 //*@@@---@@@@******************************************************************
 
 #include <JXRTest.h>
-
 #define OFFSETFUNC(s) (0.001174*pow(s,2)-0.2731*s+28.07)
-
+const int LOOKUP[255] = {
+	1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 68, 72, 76, 80, 84, 88, 92, 96, 100, 104, 108, 112, 116, 120, 124, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1088, 1152, 1216, 1280, 1344, 1408, 1472, 1536, 1600, 1664, 1728, 1792, 1856, 1920, 1984, 2048, 2176, 2304, 2432, 2560, 2688, 2816, 2944, 3072, 3200, 3328, 3456, 3584, 3712, 3840, 3968, 4096, 4352, 4608, 4864, 5120, 5376, 5632, 5888, 6144, 6400, 6656, 6912, 7168, 7424, 7680, 7936, 8192, 8704, 9216, 9728, 10240, 10752, 11264, 11776, 12288, 12800, 13312, 13824, 14336, 14848, 15360, 15872, 16384, 17408, 18432, 19456, 20480, 21504, 22528, 23552, 24576, 25600, 26624, 27648, 28672, 29696, 30720, 31744, 32768, 34816, 36864, 38912, 40960, 43008, 45056, 47104, 49152, 51200, 53248, 55295, 57343, 59391, 61439, 63487, 65535, 69631, 73727, 77823, 81919, 86015, 90111, 94206, 98302, 102398, 106494, 110590, 114686, 118782, 122877, 126973
+};
 //================================================================
+int lookupSF(int qp){
+	qp=(qp>255)?255:(qp<1)?1:qp;
+	return LOOKUP[qp-1];
+}
+
+int lookupQP(int sf){
+	int qp;
+	if(sf<=LOOKUP[0]) return 1;
+	else if(sf>=LOOKUP[254]) return 255;
+	else{
+		int a=0,b=254;
+		while(b-a>1 && LOOKUP[a]!=LOOKUP[b]){
+			if(sf==LOOKUP[(a+b)/2]) return (a+b)/2+1;
+			if(sf<LOOKUP[(a+b)/2]) b=(a+b)/2;
+			else a=(a+b)/2;
+		}
+		return b;
+		if(abs(sf-LOOKUP[a])<=abs(sf-LOOKUP[b])) return a+1;
+		else return b+1;
+	}
+}
 
 FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream) {
 	FILE * fp;
@@ -41,7 +63,7 @@ FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream) {
 	double max;
 	double quantStep;
 	double snr;
-	int shift=3;
+	const int shift=3;
 	int i,j,k,l;
 	int width,height;
 	int size;
@@ -99,7 +121,15 @@ FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream) {
 		    pMyArgs->sigma2=sigma2;
 		double qpf=pow(sigma2/(double)(size-zPixelNo),0.5)*pow(10,-snr/20)*sqrt(12)*pow(2,-shift-1);
 		if(pMyArgs->snr>=100){
-			quantStep=(quantStep>qpf)?quantStep:qpf;
+            if(quantStep>qpf){
+                if(pMyArgs->snr!=INF){
+                    printf("SNR target should be lower than %ddB.\n",
+                        (int)(-log10(quantStep*pow(sigma2/(double)(size-zPixelNo),-0.5)*pow(2,shift+1)/sqrt(12))*20+0.5)
+                    );
+                }
+            }else{
+                quantStep=qpf;
+            }
 		}else{
 			pMyArgs->quant=lookupQP((int)(qpf/quantStep));
 			qpf/=(double)lookupSF(pMyArgs->quant);
@@ -111,7 +141,6 @@ FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream) {
 			imageOut[i]	= (int32_t)(((float)image[i])/quantStep);
 		}
 		pMyArgs->stepSize = quantStep;
-	
 	return fmemopen(imageOut, size*sizeof(int32_t), "rb");
 
 }
@@ -121,11 +150,19 @@ FILE * convert2int(ARGInputs* pMyArgs, struct WMPStream* pStream) {
 
 
 //================================================================
+const PKIID IID_PKImagePnmEncode = 102;
+const PKIID IID_PKImageBmpEncode = 103;
+const PKIID IID_PKImageTifEncode = 104;
+const PKIID IID_PKImageHdrEncode = 105;
 const PKIID IID_PKImageIyuvEncode = 106;
 const PKIID IID_PKImageYuv422Encode = 107;
 const PKIID IID_PKImageYuv444Encode = 108;
 const PKIID IID_PKImageRawEncode = 0; /* Rabih added: worthless */
 
+const PKIID IID_PKImageBmpDecode = 202;
+const PKIID IID_PKImagePnmDecode = 203;
+const PKIID IID_PKImageTifDecode = 204;
+const PKIID IID_PKImageHdrDecode = 205;
 const PKIID IID_PKImageIyuvDecode = 206;
 const PKIID IID_PKImageYuv422Decode = 207;
 const PKIID IID_PKImageYuv444Decode = 208;
@@ -185,14 +222,19 @@ static ERR GetTestInfo(const char* szExt, const PKIIDInfo** ppInfo) {
 	ERR err = WMP_errSuccess;
 /* Rabih edit: add .raw and NULL to this group and we will be solid. */
 
-	static PKIIDInfo iidInfo[] = { 
-/*
-                       { ".iyuv", &IID_PKImageIyuvEncode, &IID_PKImageIyuvDecode }, 
-                       { ".yuv422", &IID_PKImageYuv422Encode, &IID_PKImageYuv422Decode }, 
-                       { ".yuv444", &IID_PKImageYuv444Encode, &IID_PKImageYuv444Decode }, 
-*/
-			{".raw", &IID_PKImageRawEncode, &IID_PKImageRawDecode}, /* Rabih added */
-			{NULL, &IID_PKImageRawEncode, &IID_PKImageRawDecode}, /* Rabih added */
+	static PKIIDInfo iidInfo[] = { { ".bmp", &IID_PKImageBmpEncode,
+			&IID_PKImageBmpDecode }, { ".ppm", &IID_PKImagePnmEncode,
+			&IID_PKImagePnmDecode }, { ".pgm", &IID_PKImagePnmEncode,
+			&IID_PKImagePnmDecode }, { ".pnm", &IID_PKImagePnmEncode,
+			&IID_PKImagePnmDecode }, { ".pfm", &IID_PKImagePnmEncode,
+			&IID_PKImagePnmDecode }, { ".tif", &IID_PKImageTifEncode,
+			&IID_PKImageTifDecode }, { ".hdr", &IID_PKImageHdrEncode,
+			&IID_PKImageHdrDecode }, { ".iyuv", &IID_PKImageIyuvEncode,
+			&IID_PKImageIyuvDecode }, { ".yuv422", &IID_PKImageYuv422Encode,
+			&IID_PKImageYuv422Decode }, { ".yuv444", &IID_PKImageYuv444Encode,
+			&IID_PKImageYuv444Decode }, 
+			{".raw", &IID_PKImageTifEncode, &IID_PKImageRawDecode}, /* Rabih added */
+			{NULL, &IID_PKImageTifEncode, &IID_PKImageRawDecode}, /* Rabih added */
 			};
 	size_t i = 0;
 
@@ -209,7 +251,7 @@ static ERR GetTestInfo(const char* szExt, const PKIIDInfo** ppInfo) {
 	}
 	else
 	{
-		*ppInfo = &iidInfo[1]; /*rabih added if else blocks for this, zx refer to ".raw" above */
+		*ppInfo = &iidInfo[11]; /*rabih added if else blocks for this*/
 		goto Cleanup;
 	}
 	Call(WMP_errUnsupportedFormat);
@@ -246,11 +288,15 @@ ERR PKTestFactory_CreateCodec(const PKIID* iid, void** ppv, ARGInputs* pMyArgs) 
 	ERR err = WMP_errSuccess;
 	PKTestDecode** ppMyppV = (PKTestDecode**)ppv;
 
-        if (IID_PKImageRawEncode == *iid) {
-		Call(PKImageEncode_Create_RAW((PKImageEncode**)ppv));
-	} 
-/*
-        else if (IID_PKImageIyuvEncode == *iid) {
+	if (IID_PKImageBmpEncode == *iid) {
+		Call(PKImageEncode_Create_BMP((PKImageEncode**)ppv));
+	} else if (IID_PKImagePnmEncode == *iid) {
+		Call(PKImageEncode_Create_PNM((PKImageEncode**)ppv));
+	} else if (IID_PKImageTifEncode == *iid) {
+		Call(PKImageEncode_Create_TIF((PKImageEncode**)ppv));
+	} else if (IID_PKImageHdrEncode == *iid) {
+		Call(PKImageEncode_Create_HDR((PKImageEncode**)ppv));
+	} else if (IID_PKImageIyuvEncode == *iid) {
 		Call(PKImageEncode_Create_IYUV((PKImageEncode**)ppv));
 	} else if (IID_PKImageYuv422Encode == *iid) {
 		Call(PKImageEncode_Create_YUV422((PKImageEncode**)ppv));
@@ -258,21 +304,31 @@ ERR PKTestFactory_CreateCodec(const PKIID* iid, void** ppv, ARGInputs* pMyArgs) 
 		Call(PKImageEncode_Create_YUV444((PKImageEncode**)ppv));
 	}
 
-	else if (IID_PKImageIyuvDecode == *iid) {
+	else if (IID_PKImageBmpDecode == *iid) {
+		Call(PKImageDecode_Create_BMP((PKTestDecode**)ppv));
+	} else if (IID_PKImagePnmDecode == *iid) {
+		Call(PKImageDecode_Create_PNM((PKTestDecode**)ppv));
+	} else if (IID_PKImageTifDecode == *iid) {
+		Call(PKImageDecode_Create_TIF((PKTestDecode**)ppv));
+	} else if (IID_PKImageHdrDecode == *iid) {
+		Call(PKImageDecode_Create_HDR((PKTestDecode**)ppv));
+	} else if (IID_PKImageIyuvDecode == *iid) {
 		Call(PKImageDecode_Create_IYUV((PKTestDecode**)ppv));
 	} else if (IID_PKImageYuv422Decode == *iid) {
 		Call(PKImageDecode_Create_YUV422((PKTestDecode**)ppv));
 	} else if (IID_PKImageYuv444Decode == *iid) {
 		Call(PKImageDecode_Create_YUV444((PKTestDecode**)ppv));
 	}
-*/
+
 	else if (IID_PKImageRawDecode == *iid) {
 	/*rabih: this whole area is new*/
 		Call(PKTestDecode_Create(ppMyppV));
 		PKTestDecode_AppendARGS(ppMyppV,pMyArgs);
 		Call(PKImageDecode_Create_RAW((ppMyppV))); /* Rabih edit: custom raw decode from input...*/
 
-	} 
+	} else if (IID_PKImageRawEncode == *iid){
+	/*This one is a dummy and should never be accessed so long as we stick with the hacked decode...*/
+	}
 
 	else {
 		Call(WMP_errUnsupportedFormat);
@@ -303,7 +359,10 @@ ERR PKTestFactory_CreateDecoderFromFileRaw(const char* szFilename,	PKImageDecode
 	//call the file memory open (fmemopen) and even can call convert2int here...
 	//
 	
-	pStream->state.file.pFile = convert2int(pMyArgs, pStream);
+	if(pMyArgs->isFloat)
+	{
+		pStream->state.file.pFile = convert2int(pMyArgs, pStream);
+	}
 	
 
 	// Create decoder
@@ -314,7 +373,7 @@ ERR PKTestFactory_CreateDecoderFromFileRaw(const char* szFilename,	PKImageDecode
 	// attach stream to decoder
 	Call(pDecoder->Initialize(pDecoder, pStream));
 	pDecoder->fStreamOwner = !0;
-	
+
 	Cleanup: return err;
 }
 

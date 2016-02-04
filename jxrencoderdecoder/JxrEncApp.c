@@ -29,9 +29,7 @@
 #include <time.h>
 #include <unistd.h> /* for absolute directory for internal file to deal with float image */
 
-#ifndef INF
-#define INF 0x3fffffff
-#endif
+
 //================================================================
 // Command line argument support
 //================================================================
@@ -44,9 +42,6 @@ typedef struct tagWMPENCAPPARGS {
 
 	CWMIStrCodecParam wmiSCP;
 	float fltImageQuality;
-	//YD add
-	float fltImageCRatio;
-	
 	Bool bOverlapSet;
 	Bool bColorFormatSet;
 } WMPENCAPPARGS;
@@ -63,9 +58,7 @@ void ARGInputInit(ARGInputs* pMyArgs)
 	pMyArgs->wid 		= 0;
 	pMyArgs->isFloat 	= 0;//default to float input
 	pMyArgs->quant		= 1;//lossless default
-	//YD added
-	pMyArgs->rate		= (float) pMyArgs->bpi;
-	pMyArgs->snr		= INF;
+    pMyArgs->snr		= INF;
 	/* i\o */
 	pMyArgs->inputFile  = setNulls; 
 	pMyArgs->outputFile = NULL; 
@@ -140,15 +133,7 @@ void WmpEncAppInitDefaultArgs(WMPENCAPPARGS* args) {
 	args->wmiSCP.uiDefaultQPIndex = 1;
 	args->wmiSCP.uiDefaultQPIndexAlpha = 1;
 
-	args->fltImageQuality = 0.f;
-	
-	//YD added
-	args->wmiSCP.bAdaptiveQP = FALSE;
-	args->wmiSCP.bExtendedJXR = FALSE;
-	args->wmiSCP.fltCRatio = 1.0;
-	args->wmiSCP.isFloat = 0;
-	args->fltImageCRatio = 1.0;
-	
+	args->fltImageQuality = 1.f;
 	args->bOverlapSet = 0;
 	args->bColorFormatSet = 0;
 }
@@ -206,8 +191,6 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 	int i = 1, j = 0, k;
 	char c;
 	int idxPF = -1;
-	//YD added
-	int idxQR = -1; // 0 quantize 1 rate 2 ratio
 
 	WmpEncAppInitDefaultArgs(args);
 				char *actualPath;
@@ -217,7 +200,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 		switch ((c = argv[i][1])) {
 		/* the no-argument switches */
 		case 't':
-			//use #define DISABLE_PERF_MEASUREMENT or not
+			// NOOP - now we always print timing info
 			break;
 
 		case 'v':
@@ -236,15 +219,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 		case 'u':
 			args->wmiSCP.bUnscaledArith = TRUE;
 			break;
-		//YD added
-		case 'A':
-			args->wmiSCP.bAdaptiveQP = TRUE;
-			break;
-			
-		case 'E':
-			args->wmiSCP.bExtendedJXR = TRUE;
-			break;
-			
+
 		default:
 			i++;
 			if (i == argc || argv[i][0] == '-') // need more info
@@ -262,45 +237,22 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				args->szOutputFile = argv[i];
 				pMyArgs->outputFile = argv[i];
 				break;
-			//YD added for rate control parameter assignment
-			case 'r': {
-				if(idxQR == -1){
-					pMyArgs->rate = (float) atof(argv[i]);
-					if (pMyArgs->rate <= 0.f)
-						Call(WMP_errInvalidArgument);
-					idxQR = 1;
-				}else Call(WMP_errInvalidArgument);
-			}
+            case 'S': {		
+				if(strcmp(argv[i],"inf")==0)		
+					pMyArgs->snr=INF;		
+				else		
+					pMyArgs->snr = atoi(argv[i]);		
+			}		
 				break;
-				
-			case 'R': {
-				if(idxQR == -1){
-					pMyArgs->rate = (float) atof(argv[i]);
-					if (pMyArgs->rate <= 0.f)
-						Call(WMP_errInvalidArgument);
-					idxQR = 2;
-				}else Call(WMP_errInvalidArgument);
-			}
-				break;
-				
-			case 'S': {
-				if(strcmp(argv[i],"inf")==0)
-					pMyArgs->snr=INF;
-				else
-					pMyArgs->snr = atoi(argv[i]);
-			}
-				break;
-				
 			case 'q': {
-					args->fltImageQuality = (float) atof(argv[i]);
-					pMyArgs->quant = (unsigned char) atoi(argv[i]);
-					if (args->fltImageQuality < 0.f
-							|| args->fltImageQuality > 255.f)
-						Call(WMP_errInvalidArgument);
-					pMyArgs->rate = (float) pMyArgs->bpi; //YD added default rate
+				args->fltImageQuality = (float) atof(argv[i]);
+				pMyArgs->quant = (unsigned char) atoi(argv[i]);
+				if (args->fltImageQuality < 0.f
+						|| args->fltImageQuality > 255.f)
+					Call(WMP_errInvalidArgument);
 			}
 				break;
-				
+
 			case 'Q':
 				args->wmiSCP.uiDefaultQPIndexAlpha = (U8) (atoi(argv[i]));
 				break;
@@ -346,7 +298,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				}
 				args->wmiSCP.cNumOfSliceMinus1H = (U8) j;
 				break;
-
+            
 			case 'V': // vertical tiling
 				for (j = 0;; i++, j++) {
 					args->wmiSCP.uiTileX[j] = atoi(argv[i]);
@@ -389,14 +341,10 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				{
 					pMyArgs->bpi = 32;
 					pMyArgs->isFloat = 1;//default
-					args->wmiSCP.isFloat = 1;
 				}
 				else
 					pMyArgs->bpi = atoi(argv[i]);
 				pMyArgs->end = 1;//little endian
-				if(idxQR == -1 || idxQR == 0){
-					pMyArgs->rate = (float) pMyArgs->bpi; //YD added default rate
-				}
 				break;
 			case 'B':
 				if(strcmp(argv[i],"32f")==0)
@@ -410,7 +358,6 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				break;
 			case 'h':
 				pMyArgs->hei = (unsigned int)atoi(argv[i]);
-
 				break;
 			case 'w':
 				pMyArgs->wid = (unsigned int)atoi(argv[i]);
@@ -424,17 +371,9 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 	}
 	/* rabih edit: this calls the convert2int function which updates the args->szInputFile, and pMyArgs->inputFile*/
 	//if(pMyArgs->isFloat)
-	//	convert2int(&args,pMyArgs);	
+	//	convert2int(&args,pMyArgs);		
 	
-	//YD added	
-	if(idxQR == 2){
-		pMyArgs->rate = (float) pMyArgs->bpi / pMyArgs->rate;
-		idxQR = 1;
-	}
-	if(args->wmiSCP.bAdaptiveQP == TRUE && idxQR != 1) Call(WMP_errInvalidArgument);
-	if(idxQR == 1 && args->fltImageQuality != 0.f && args->wmiSCP.bAdaptiveQP == FALSE) Call(WMP_errInvalidArgument);
-	if(args->wmiSCP.bExtendedJXR && !args->wmiSCP.bAdaptiveQP)  Call(WMP_errInvalidArgument);
-	
+
 	FailIf((int) sizeof2(pixelFormat) <= idxPF, WMP_errUnsupportedFormat);
 	if (idxPF >= 0)
 		args->guidPixFormat = *pixelFormat[idxPF];
@@ -482,21 +421,9 @@ ERR connectWmpEncAppArgsAndARGInputs(WMPENCAPPARGS* args, ARGInputs* pMyArgs)
 			break;
 	}
 	args->wmiSCP.bfBitstreamFormat = FREQUENCY; //says it on tif original
-
+	args->wmiSCP.uiDefaultQPIndex = pMyArgs->quant;
+	args->fltImageQuality = pMyArgs->quant;
 	args->szInputFile = pMyArgs->inputFile;
-	//YD added
-	args->fltImageCRatio = ((float)pMyArgs->bpi/pMyArgs->rate>1.0)?
-							(float)pMyArgs->bpi/pMyArgs->rate:
-							1.0;
-	if(args->fltImageQuality != 0.f || args->fltImageCRatio ==1.0){
-		args->wmiSCP.uiDefaultQPIndex = pMyArgs->quant;
-		args->fltImageQuality = pMyArgs->quant;
-	}else{
-		args->fltImageQuality == 1.f;
-		args->wmiSCP.uiDefaultQPIndex = 255;
-		args->fltImageQuality = 255;
-	}
-	
 	//printf("pMyArgs output file is %d\n",pMyArgs->outputFile);
 	if(pMyArgs->outputFile != NULL && pMyArgs->outputFile != '\0')
 	{
@@ -583,7 +510,7 @@ main(int argc, char* argv[]) {
 	if (args.wmiSCP.bVerbose) {
 		WmpEncAppShowArgs(&args);
 	}
-	
+
 	Call(PKCreateFactory(&pFactory, PK_SDK_VERSION));
 	Call(
 			pFactory->CreateStreamFromFilename(&pEncodeStream, args.szOutputFile, "wb"));
@@ -609,9 +536,8 @@ main(int argc, char* argv[]) {
 		PKRect rect = { 0, 0, 0, 0 };
 
 		Call(pTestFactory->CreateDecoderFromFileRaw(args.szInputFile, &pDecoder, pMyArgs)); 
-		//YD added
-		args.fltImageQuality = pMyArgs->quant;
-		
+        args.fltImageQuality = pMyArgs->quant;
+        
 		if (IsEqualGUID(&args.guidPixFormat, &GUID_PKPixelFormatDontCare))
 			Call(pDecoder->GetPixelFormat(pDecoder, &args.guidPixFormat));
 
@@ -646,7 +572,7 @@ main(int argc, char* argv[]) {
 					(U32) rect.Width < (uTileX >> 1) ?
 							0 : (rect.Width + (uTileX >> 1)) / uTileX - 1;
 		}
-		
+
 		Call(
 				pEncoder->Initialize(pEncoder, pEncodeStream, &args.wmiSCP, sizeof(args.wmiSCP)));
 
@@ -720,16 +646,13 @@ main(int argc, char* argv[]) {
 						+ (float) (pQPs + 6)[5] * qf);
 			}
 		} else {
-			//YD added
 			pEncoder->WMP.wmiSCP.uiDefaultQPIndex = (U8) args.fltImageQuality;
-			pEncoder->WMP.wmiSCP.fltCRatio = args.fltImageCRatio;
 		}
-		pEncoder->WMP.wmiSCP.qpMatrix=NULL;
 
 		if (pEncoder->WMP.wmiSCP.uAlphaMode == 2)
 			pEncoder->WMP.wmiSCP_Alpha.uiDefaultQPIndex =
 					args.wmiSCP.uiDefaultQPIndexAlpha;
-		
+
 		Call(pEncoder->SetPixelFormat(pEncoder, args.guidPixFormat));
 
 		Call(pEncoder->SetSize(pEncoder, rect.Width, rect.Height)); /*made it here in step by step run...*/
@@ -743,13 +666,13 @@ main(int argc, char* argv[]) {
 		pEncoder->WriteSource = PKImageEncode_WriteSource;
 		Call(pEncoder->WriteSource(pEncoder, pConverter, &rect));
 		//I could seek set to the end and then write it in...
-		//if(pMyArgs->isFloat)
-		//{
+		if(pMyArgs->isFloat)
+		{
 			FILE *fps;
 			fps = fopen(args.szOutputFile,"ab");//append the quantStep
 			fwrite(&(pMyArgs->stepSize),sizeof(double),1,fps);//write at the end
 			fclose(fps);
-		//}
+		}
 
 		pConverter->Release(&pConverter);
 		pDecoder->Release(&pDecoder);

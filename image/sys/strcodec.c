@@ -182,69 +182,38 @@ Void getTilePos(CWMImageStrCodec* pSC, size_t mbX, size_t mbY) {
 // utility functions for 2 macro block rows
 //================================================================
 Void initMRPtr(CWMImageStrCodec* pSC) {
-    size_t j, jend = 0;//(pSC->m_pNextSC != NULL);
-	
+	size_t j, jend = (pSC->m_pNextSC != NULL);
+
 	for (j = 0; j <= jend; j++) {
 		memcpy(pSC->p0MBbuffer, pSC->a0MBbuffer, sizeof(pSC->p0MBbuffer));
 		memcpy(pSC->p1MBbuffer, pSC->a1MBbuffer, sizeof(pSC->p1MBbuffer));
-		//pSC = pSC->m_pNextSC;
+		pSC = pSC->m_pNextSC;
 	}
 }
-
 
 Void advanceMRPtr(CWMImageStrCodec* pSC) {
 	const COLORFORMAT cf = pSC->m_param.cfColorFormat;
 	const int cpChroma = cblkChromas[cf] * 16;
-    size_t i, j, jend = 0;//(pSC->m_pNextSC != NULL);
-
-	#if 0
-		int k;
-		printf("\np0MBbuffer\n");
-		for (i=0;i<16;i++){
-			for (k=0;k<16;k++){
-			printf("%d ",*(pSC->p0MBbuffer[0]+k+i*16));
-			}
-			printf("\n");
-		}
-		printf("\np1MBbuffer\n");
-		for (i=0;i<16;i++){
-			for (k=0;k<16;k++){
-			printf("%d ",*(pSC->p1MBbuffer[0]+k+i*16));
-			}
-			printf("\n");
-		}
-	#endif
+	size_t i, j, jend = (pSC->m_pNextSC != NULL);
 
 	assert(pSC->m_bSecondary == FALSE);
 	for (j = 0; j <= jend; j++) {
 		int cpStride = 16 * 16;
 		for (i = 0; i < pSC->m_param.cNumChannels; i++) {
-			//cNumChannels==1
 			pSC->pPlane[i] = pSC->p0MBbuffer[i];
-			//YD added leave channel buffer problem
+
 			pSC->p0MBbuffer[i] += cpStride;
 			pSC->p1MBbuffer[i] += cpStride;
-			
+
 			cpStride = cpChroma;
 		}
-		
-		#if 0
-			printf("\npPlane\n");
-			for (i=0;i<16;i++){
-				for (k=0;k<16;k++){
-				printf("%d ",*(pSC->pPlane[0]+k+i*16));
-				}
-				printf("\n");
-			}
-		#endif
-		
-		//pSC = pSC->m_pNextSC;
+		pSC = pSC->m_pNextSC;
 	}
 }
 
 /* advance to next MB row */
 Void advanceOneMBRow(CWMImageStrCodec *pSC) {
-    size_t i, j, jend = 0;//(pSC->m_pNextSC != NULL);
+	size_t i, j, jend = (pSC->m_pNextSC != NULL);
 	CWMIPredInfo *pPredInfo;
 
 	for (j = 0; j <= jend; j++) {
@@ -253,19 +222,19 @@ Void advanceOneMBRow(CWMImageStrCodec *pSC) {
 			pSC->PredInfo[i] = pSC->PredInfoPrevRow[i];
 			pSC->PredInfoPrevRow[i] = pPredInfo;
 		}
-		//pSC = pSC->m_pNextSC;
+		pSC = pSC->m_pNextSC;
 	}
 }
 
 Void swapMRPtr(CWMImageStrCodec* pSC) {
 	PixelI *pTemp[MAX_CHANNELS];
-    size_t j, jend = 0;//(pSC->m_pNextSC != NULL);
+	size_t j, jend = (pSC->m_pNextSC != NULL);
 
 	for (j = 0; j <= jend; j++) {
 		memcpy(pTemp, pSC->a0MBbuffer, sizeof(pSC->a0MBbuffer));
 		memcpy(pSC->a0MBbuffer, pSC->a1MBbuffer, sizeof(pSC->a0MBbuffer));
 		memcpy(pSC->a1MBbuffer, pTemp, sizeof(pSC->a0MBbuffer));
-		//pSC = pSC->m_pNextSC;
+		pSC = pSC->m_pNextSC;
 	}
 }
 
@@ -851,7 +820,7 @@ Int allocateQuantizer(CWMIQuantizer * pQuantizer[MAX_CHANNELS], size_t cChannel,
 		size_t cQP) {
 	size_t iCh;
 
-	if ((cQP > 16 || cChannel > MAX_CHANNELS) && cQP!=255)
+	if (cQP > 16 || cChannel > MAX_CHANNELS)
 		return ICERR_ERROR;
 	pQuantizer[0] = (CWMIQuantizer *) malloc(
 			cQP * sizeof(CWMIQuantizer) * cChannel);
@@ -920,7 +889,6 @@ Void useLPQuantizer(CWMImageStrCodec * pSC, size_t cQP, size_t iTile) {
 }
 
 U8 dquantBits(U8 cQP) {
-	if(cQP==255) return 8;
 	return (cQP < 2 ? 0 : (cQP < 4 ? 1 : (cQP < 6 ? 2 : (cQP < 10 ? 3 : 4))));
 }
 
@@ -988,9 +956,7 @@ Void putBit16z(BitIOInfo* pIO, U32 uiBits, U32 cBits) {
 
 	pIO->uiAccumulator = (pIO->uiAccumulator << cBits) | uiBits;
 	pIO->cBitsUsed += cBits;
-	
-	pIO->cBitsCounter += cBits; //YD added
-	
+
 	*(U16*) pIO->pbCurrent =
 			(U16) WRITESWAP_ENDIAN(pIO->uiAccumulator << (32 - pIO->cBitsUsed));
 
@@ -1082,8 +1048,6 @@ ERR attachISRead(BitIOInfo* pIO, struct WMPStream* pWS, CWMImageStrCodec* pSC) {
 	pIO->uiAccumulator = load4BE(pIO->pbStart);
 
 	pIO->cBitsUsed = 0;
-	pIO->cBitsCounter = 0;//YD added
-	
 	pIO->iMask = ~(PACKETLENGTH * 2);
 	pIO->iMask &= ~1;
 
@@ -1147,7 +1111,6 @@ ERR attachISWrite(BitIOInfo* pIO, struct WMPStream* pWS) {
 
 	pIO->uiAccumulator = 0;
 	pIO->cBitsUsed = 0;
-	pIO->cBitsCounter = 0;//YD added
 	pIO->iMask = ~(PACKETLENGTH * 2);
 
 	pIO->pWS = pWS;
@@ -1202,7 +1165,6 @@ void OutputIndivPerfTimer(struct PERFTIMERSTATE *pPerfTimer, char *pszTimerName,
 	Bool fResult;
 
 	fResult = FALSE;
-#ifndef DISABLE_PERF_VERBOSE_YD
 	printf("%s (%s): ", pszTimerName, pszDescription);
 	if (pPerfTimer) {
 		fResult = PerfTimerGetResults(pPerfTimer, &rResults);
@@ -1220,23 +1182,13 @@ void OutputIndivPerfTimer(struct PERFTIMERSTATE *pPerfTimer, char *pszTimerName,
 	}
 	if (FALSE == fResult)
 		printf("Results not available!\n");
-#else
-	if (pPerfTimer) {
-		fResult = PerfTimerGetResults(pPerfTimer, &rResults);
-		if (fResult) {
-			printf("%.3f\t",(float) rResults.iElapsedTime / 1000000);
-		}
-	}
-	if (FALSE == fResult)
-		printf("Na\t");
-#endif
 }
 
 void OutputPerfTimerReport(CWMImageStrCodec *pState) {
 	float fltMegaPixels;
 
 	assert(pState->m_fMeasurePerf);
-#ifndef DISABLE_PERF_VERBOSE_YD
+
 	printf(
 			"***************************************************************************\n");
 	printf("* Perf Report\n");
@@ -1248,9 +1200,7 @@ void OutputPerfTimerReport(CWMImageStrCodec *pState) {
 	printf("Image Width = %d, Height = %d, total MegaPixels = %.1f MP\n",
 			(int) pState->WMII.cWidth, (int) pState->WMII.cHeight,
 			fltMegaPixels);
-#else
-	printf("\n");
-#endif
+
 	OutputIndivPerfTimer(pState->m_ptEncDecPerf, "m_ptEncDecPerf", "excl I/O",
 			fltMegaPixels);
 	OutputIndivPerfTimer(pState->m_ptEndToEndPerf, "m_ptEndToEndPerf",

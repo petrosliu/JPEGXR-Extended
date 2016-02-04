@@ -159,9 +159,6 @@ typedef struct tagBitIOInfo {
 
 	U32 uiAccumulator; // 32bit acc as bit field cache
 	U32 cBitsUsed; // # of bits used of acc, [0,16)
-	
-	U32 cBitsCounter; //YD added
-	
 #ifdef ARMOPT_BITIO
 	U32 cBitsUnused; // # of bits remain unused in acc, [0,32]
 #endif
@@ -294,8 +291,8 @@ typedef struct CWMITile {
 	Bool bUseDC;
 	Bool bUseLP;
 	U8 cChModeDC;
-	U8 cChModeLP[255];
-	U8 cChModeHP[255];
+	U8 cChModeLP[16];
+	U8 cChModeHP[16];
 } CWMITile;
 
 #ifdef ARMOPT_COLORCONVERSION_C
@@ -324,12 +321,6 @@ typedef struct CWMImageStrCodec {
 	/** core parameters **/
 	CCoreParameters m_param;
 
-	//YD added
-	int32_t * pTransformedImage;
-	U32 cNumOfBits;
-	void * qpMatrix;
-	int patch[4];
-	
 	struct CWMDecoderParameters *m_Dparam; // this is specified thru pointer because the same set of parameters may be used by multiple image planes
 
 	U8 cSB;
@@ -468,7 +459,6 @@ typedef struct CWMImageStrCodec {
 #endif // DISABLE_PERF_MEASUREMENT
 	// postproc information for 2 MB rows: 0(previous row) 1(current row)
 	struct tagPostProcInfo * pPostProcInfo[MAX_CHANNELS][2];
-	
 } CWMImageStrCodec;
 
 //================================================================
@@ -477,7 +467,6 @@ ERR WMPFree(void** ppv);
 
 //================================================================
 Void initMRPtr(CWMImageStrCodec*);
-
 Void advanceMRPtr(CWMImageStrCodec*);
 Void swapMRPtr(CWMImageStrCodec*);
 

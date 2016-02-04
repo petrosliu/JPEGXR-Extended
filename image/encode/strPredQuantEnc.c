@@ -33,7 +33,7 @@ I32 QUANT_Mulless(PixelI v, PixelI o, I32 r) {
 	const I32 m = v >> 31;
 
 	assert(sizeof(PixelI) == sizeof(U32));
-	return ((((v ^ m) - m + o) >> r) ^ m) - m; //ydmark
+	return ((((v ^ m) - m + o) >> r) ^ m) - m;
 }
 
 I32 MUL32HR(U32 a, U32 b, U32 r) {
@@ -41,25 +41,19 @@ I32 MUL32HR(U32 a, U32 b, U32 r) {
 }
 
 I32 QUANT(PixelI v, PixelI o, I32 man, I32 exp) {
-	const I32 m = v >> 31; 
+	const I32 m = v >> 31;
 
 	assert(sizeof(PixelI) == sizeof(U32));
-	//printf("QUANT %d\n",(MUL32HR((v ^ m) - m + o, man, exp) ^ m) - m);
-	return (MUL32HR((v ^ m) - m + o, man, exp) ^ m) - m; 
+	return (MUL32HR((v ^ m) - m + o, man, exp) ^ m) - m;
 }
 
 Int quantizeMacroblock(CWMImageStrCodec* pSC) {
-	
-	#if 0
-		printf("quantizeMacroblock\n");
-	#endif
-
 	CWMITile * pTile = pSC->pTile + pSC->cTileColumn;
 	CWMIMBInfo * pMBInfo = &pSC->MBInfo;
 	const COLORFORMAT cf = pSC->m_param.cfColorFormat;
 	int iChannel, i, j;
-//YD mark
-	if (/*pSC->m_param.bScaledArith && */pSC->m_param.bTranscode == FALSE){
+
+	if (/*pSC->m_param.bScaledArith && */pSC->m_param.bTranscode == FALSE)
 		for (iChannel = 0; iChannel < (int) pSC->m_param.cNumChannels;
 				iChannel++) {
 			const Bool bUV = (iChannel > 0
@@ -78,39 +72,35 @@ Int quantizeMacroblock(CWMImageStrCodec* pSC) {
 
 			for (j = 0; j < iNumBlock; j++) {
 				PixelI * pData = pSC->pPlane[iChannel] + pOffset[j];
-                //printf("%d\n",pData[0]);
-				if (j == 0){ // DC
+
+				if (j == 0) // DC
 					pData[0] = (
 							pQPDC->iMan == 0 ?
 									QUANT_Mulless(pData[0], pQPDC->iOffset,
 											pQPDC->iExp) :
 									QUANT(pData[0], pQPDC->iOffset, pQPDC->iMan,
 											pQPDC->iExp));
-				}
-				else if (pSC->WMISCP.sbSubband != SB_DC_ONLY) {// LP
+				else if (pSC->WMISCP.sbSubband != SB_DC_ONLY) // LP
 					pData[0] = (
 							pQPLP->iMan == 0 ?
 									QUANT_Mulless(pData[0], pQPLP->iOffset,
 											pQPLP->iExp) :
 									QUANT(pData[0], pQPLP->iOffset, pQPLP->iMan,
 											pQPLP->iExp));
-				}
+
 				// quantize HP
 				if (pSC->WMISCP.sbSubband != SB_DC_ONLY
-						&& pSC->WMISCP.sbSubband != SB_NO_HIGHPASS){
-					for (i = 1; i < 16; i++){
+						&& pSC->WMISCP.sbSubband != SB_NO_HIGHPASS)
+					for (i = 1; i < 16; i++)
 						pData[i] = (
 								pQPHP->iMan == 0 ?
 										QUANT_Mulless(pData[i], pQPHP->iOffset,
 												pQPHP->iExp) :
 										QUANT(pData[i], pQPHP->iOffset,
 												pQPHP->iMan, pQPHP->iExp));
-					}
-				}
 			}
 		}
-	}
-			
+
 	for (iChannel = 0; iChannel < (int) pSC->m_param.cNumChannels; iChannel++) {
 		I32 * pDC = pSC->MBInfo.iBlockDC[iChannel];
 		PixelI * pData = pSC->pPlane[iChannel];

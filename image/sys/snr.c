@@ -7,21 +7,6 @@
 
 #include "snr.h"
 
-int quickQP(double PSNR, int bits){
-    double peak = pow(2.0,(double)bits) - 1.0;
-    double MSE = pow(peak,2.0)/pow(10.0,PSNR/10.0);
-    int sf = (int)(sqrt(MSE*12)+0.5);
-    return lookupQP(sf);
-}
-
-double quickPSNR(int qp, int bits){
-    int sf = lookupSF(qp);
-    double MSE = pow((double)sf,2.0) / 12.0;
-    double peak = pow(2.0,(double)bits) - 1.0;
-    double PSNR = 20.0 * log10( peak / sqrt(MSE));
-    return PSNR;
-}
-
 double calculate_PSNR(double* source_data, double* comparison_data, int count, int bits) {
     int i;
     double MSE = 0.0, PSNR = 0.0;
@@ -98,7 +83,6 @@ double calculate_suite(double* source_data, double* comparison_data, int w, int 
             return calculate_PSNR(source_data,comparison_data,w*h,bits);
         }
         case CSNR:{
-            
             return calculate_SNR(source_data,comparison_data,w*h);
         }
         case CRHO:{

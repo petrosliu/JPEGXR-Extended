@@ -1,14 +1,14 @@
 //*@@@+++@@@@******************************************************************
 //
-// Copyright ï¿½ Microsoft Corp.
+// Copyright © Microsoft Corp.
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 
-// ï¿½ Redistributions of source code must retain the above copyright notice,
+// • Redistributions of source code must retain the above copyright notice,
 //   this list of conditions and the following disclaimer.
-// ï¿½ Redistributions in binary form must reproduce the above copyright notice,
+// • Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // 
@@ -131,7 +131,7 @@ Int readTileHeaderLP(CWMImageStrCodec * pSC, BitIOInfo * pIO)
 {
     if(pSC->WMISCP.sbSubband != SB_DC_ONLY && (pSC->m_param.uQPMode & 2) != 0){ // not LP uniform
         CWMITile * pTile = pSC->pTile + pSC->cTileColumn;
-        U8 i,j;
+        U8 i;
 
         pTile->bUseDC = (getBit16(pIO, 1) == 1 ? TRUE : FALSE);
         pTile->cBitsLP = 0;
@@ -146,25 +146,14 @@ Int readTileHeaderLP(CWMImageStrCodec * pSC, BitIOInfo * pIO)
             useDCQuantizer(pSC, pSC->cTileColumn);
         }
         else{
-            if(!pSC->WMISCP.bExtendedJXR){
-                pTile->cNumQPLP = (U8)getBit16(pIO, 4) + 1;
-            }else{
-                pTile->cNumQPLP = (U8)255;
-            }
+            pTile->cNumQPLP = (U8)getBit16(pIO, 4) + 1;
             pTile->cBitsLP = dquantBits(pTile->cNumQPLP);
             
             if(allocateQuantizer(pTile->pQuantizerLP, pSC->m_param.cNumChannels, pTile->cNumQPLP) != ICERR_OK)
                 return ICERR_ERROR;
 
             for(i = 0; i < pTile->cNumQPLP; i ++){
-                if(!pSC->WMISCP.bExtendedJXR){
-                    pTile->cChModeLP[i] = readQuantizer(pTile->pQuantizerLP, pIO, pSC->m_param.cNumChannels, i);
-                }else{
-                    pTile->cChModeLP[i] = (U8) 0;
-                    for (j = 0; j < pSC->m_param.cNumChannels; j++){
-						pTile->pQuantizerLP[j][i].iIndex = (U8)i+1;
-					}
-                }
+                pTile->cChModeLP[i] = readQuantizer(pTile->pQuantizerLP, pIO, pSC->m_param.cNumChannels, i);
                 formatQuantizer(pTile->pQuantizerLP, pTile->cChModeLP[i], pSC->m_param.cNumChannels, i, TRUE, pSC->m_param.bScaledArith);
             }
         }
@@ -200,9 +189,7 @@ Int readTileHeaderHP(CWMImageStrCodec * pSC, BitIOInfo * pIO)
                 return ICERR_ERROR;
 
             for(i = 0; i < pTile->cNumQPHP; i ++){
-                if(!pSC->WMISCP.bExtendedJXR){
-                    pTile->cChModeHP[i] = readQuantizer(pTile->pQuantizerHP, pIO, pSC->m_param.cNumChannels, i);
-                }
+                pTile->cChModeHP[i] = readQuantizer(pTile->pQuantizerHP, pIO, pSC->m_param.cNumChannels, i);
                 formatQuantizer(pTile->pQuantizerHP, pTile->cChModeHP[i], pSC->m_param.cNumChannels, i, FALSE, pSC->m_param.bScaledArith);
             }
         }
@@ -2860,11 +2847,8 @@ Int ReadImagePlaneHeader(CWMImageInfo* pII, CWMIStrCodecParam *pSCP,
 
     // subbands
     pSCP->sbSubband = getBit32_SB(pSB, 4);
-    if(pSCP->sbSubband > 3){
-        pSCP->sbSubband -= 4;
-        pSCP->bExtendedJXR = TRUE;
-    }
-    // color parameters
+
+// color parameters
     switch (pSC->cfColorFormat) {
         case Y_ONLY:
             pSC->cNumChannels = 1;
@@ -3309,7 +3293,7 @@ Int ImageStrDecInit(
         return ICERR_ERROR;
     }
     cb += i * cMacBlock;
-    
+
     pb = malloc(cb);
     if(pb == NULL)
         return WMP_errOutOfMemory;

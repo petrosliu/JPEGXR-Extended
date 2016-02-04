@@ -480,8 +480,6 @@ Void transformMacroblock(CWMImageStrCodec * pSC) {
 	Int iNumChromaFullPlanes = (Int) (
 			(YUV_420 == cfColorFormat || YUV_422 == cfColorFormat) ?
 					1 : pSC->m_param.cNumChannels);
-    
-    //printf("\t\t\t\t\t\ttransformMacroblock\n");
 
 #define mbX               pSC->mbX
 #define mbY               pSC->mbY
@@ -531,7 +529,6 @@ Void transformMacroblock(CWMImageStrCodec * pSC) {
 	}
 	mbX = pSC->cColumn, mbY = pSC->cRow;
 
-	
 	//================================================================
 	// 400_Y, 444_YUV
 	for (i = 0; i < iNumChromaFullPlanes; ++i) {
@@ -1040,6 +1037,5 @@ Void transformMacroblock(CWMImageStrCodec * pSC) {
 		}
 	}
 	assert(NULL == p);
-	
 }
 
