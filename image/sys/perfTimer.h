@@ -41,7 +41,6 @@
 //***************************************************************************
 #define DISABLE_PERF_MEASUREMENT
 
-#define DISABLE_PERF_MEASUREMENT
 #ifdef DISABLE_PERF_MEASUREMENT
 
 #define PERFTIMER_ONLY(code)
