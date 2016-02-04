@@ -71,6 +71,8 @@ typedef struct
 	char* outputFile;
 	int quant;
 	double stepSize;
+	double sigma2;
+	double snr;
 } ARGInputs;
 
 //================================================================

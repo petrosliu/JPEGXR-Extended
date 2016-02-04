@@ -1,0 +1,41 @@
+#!/bin/bash
+
+echo =====================
+echo ./JxrEncApp -L 8 -i wavefield1_8b -w 576 -h 560 -o out.jxr
+./JxrEncApp -L 8 -i wavefield1_8b -w 576 -h 560 -o out.jxr > /dev/null
+./JxrDecApp -i out.jxr -o out.raw
+./SNR -c out.raw -o wavefield1_8b -w 576 -h 560 -b 8
+echo $(stat -c%s "out.jxr")'/'$(stat -c%s "wavefield1_8b")
+
+echo ./JxrEncApp -L 16 -i wavefield1_16b -w 576 -h 560 -o out.jxr
+./JxrEncApp -L 16 -i wavefield1_16b -w 576 -h 560 -o out.jxr > /dev/null
+./JxrDecApp -i out.jxr -o out.raw
+./SNR -c out.raw -o wavefield1_16b -w 576 -h 560 -b 16
+echo $(stat -c%s "out.jxr")'/'$(stat -c%s "wavefield1_16b")
+
+echo ./JxrEncApp -L 32 -i test_data1 -w 576 -h 560 -o out.jxr
+./JxrEncApp -L 32 -i test_data1 -w 576 -h 560 -o out.jxr > /dev/null
+./JxrDecApp -i out.jxr -o out.raw
+./SNR -c out.raw -o test_data1 -w 576 -h 560 -b 32
+echo $(stat -c%s "out.jxr")'/'$(stat -c%s "test_data1")
+
+echo ./JxrEncApp -L 32 -i test_data1 -w 576 -h 560 -o out.jxr -q 100
+./JxrEncApp -L 32 -i test_data1 -w 576 -h 560 -o out.jxr -q 100 > /dev/null
+./JxrDecApp -i out.jxr -o out.raw
+./SNR -c out.raw -o test_data1 -w 576 -h 560 -b 32
+echo $(stat -c%s "out.jxr")'/'$(stat -c%s "test_data1")
+
+echo ./JxrEncApp -L 32f -i wavefield1_32f -w 576 -h 560 -o out.jxr
+./JxrEncApp -L 32f -i wavefield1_32f -w 576 -h 560 -o out.jxr> /dev/null
+./JxrDecApp -i out.jxr -o out.raw -F
+./SNR -c out.raw -o wavefield1_32f -w 576 -h 560 -b 32f
+echo $(stat -c%s "out.jxr")'/'$(stat -c%s "wavefield1_32f")
+
+echo ./JxrEncApp -L 32f -i wavefield1_32f -w 576 -h 560 -o out.jxr -S 90
+./JxrEncApp -L 32f -i wavefield1_32f -w 576 -h 560 -o out.jxr -S 90 > /dev/null
+./JxrDecApp -i out.jxr -o out.raw -F
+./SNR -c out.raw -o wavefield1_32f -w 576 -h 560 -b 32f
+echo $(stat -c%s "out.jxr")'/'$(stat -c%s "wavefield1_32f")
+echo =====================
+rm out.raw
+rm out.jxr

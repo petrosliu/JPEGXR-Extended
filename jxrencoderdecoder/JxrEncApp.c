@@ -58,6 +58,7 @@ void ARGInputInit(ARGInputs* pMyArgs)
 	pMyArgs->wid 		= 0;
 	pMyArgs->isFloat 	= 0;//default to float input
 	pMyArgs->quant		= 1;//lossless default
+    pMyArgs->snr		= INF;
 	/* i\o */
 	pMyArgs->inputFile  = setNulls; 
 	pMyArgs->outputFile = NULL; 
@@ -236,7 +237,13 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				args->szOutputFile = argv[i];
 				pMyArgs->outputFile = argv[i];
 				break;
-
+            case 'S': {		
+				if(strcmp(argv[i],"inf")==0)		
+					pMyArgs->snr=INF;		
+				else		
+					pMyArgs->snr = atoi(argv[i]);		
+			}		
+				break;
 			case 'q': {
 				args->fltImageQuality = (float) atof(argv[i]);
 				pMyArgs->quant = (unsigned char) atoi(argv[i]);
@@ -291,7 +298,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 				}
 				args->wmiSCP.cNumOfSliceMinus1H = (U8) j;
 				break;
-
+            
 			case 'V': // vertical tiling
 				for (j = 0;; i++, j++) {
 					args->wmiSCP.uiTileX[j] = atoi(argv[i]);
@@ -395,7 +402,7 @@ ERR WmpEncAppParseArgs(int argc, char* argv[], WMPENCAPPARGS* args, ARGInputs* p
 ERR connectWmpEncAppArgsAndARGInputs(WMPENCAPPARGS* args, ARGInputs* pMyArgs)
 {
 
-	WmpEncAppInitDefaultArgs(args);
+	//WmpEncAppInitDefaultArgs(args);
 	args->wmiSCP.cfColorFormat = YUV_444; //Y_ONLY; becuase tif original program is like this...
 	const char* defaultOut = "out.jxr";
 	switch(pMyArgs->bpi)
@@ -529,6 +536,8 @@ main(int argc, char* argv[]) {
 		PKRect rect = { 0, 0, 0, 0 };
 
 		Call(pTestFactory->CreateDecoderFromFileRaw(args.szInputFile, &pDecoder, pMyArgs)); 
+        args.fltImageQuality = pMyArgs->quant;
+        
 		if (IsEqualGUID(&args.guidPixFormat, &GUID_PKPixelFormatDontCare))
 			Call(pDecoder->GetPixelFormat(pDecoder, &args.guidPixFormat));
 

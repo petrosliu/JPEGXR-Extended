@@ -502,7 +502,7 @@ Int StrIOEncInit(CWMImageStrCodec* pSC) {
 				if (pSC->ppTempFile[i] == NULL)
 					return ICERR_ERROR;
 
-				if ((pFilename = tmpnam(NULL)) == NULL)
+				if ((pFilename = mkstemp(NULL)) == NULL)
 					return ICERR_ERROR;
 				strcpy(pSC->ppTempFile[i], pFilename);
 #endif
@@ -820,7 +820,7 @@ Int WriteImagePlaneHeader(CWMImageStrCodec * pSC) {
 	case BD_32:
 	case BD_32S:
 		if (pSCP->nLenMantissaOrShift == 0)
-			pSCP->nLenMantissaOrShift = 10; //default
+			pSCP->nLenMantissaOrShift = 3;//10 default
 		PUTBITS(pIO, pSCP->nLenMantissaOrShift, 8);
 		break;
 	case BD_32F:
